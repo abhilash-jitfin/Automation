@@ -1,13 +1,28 @@
+import threading
 import requests
 
 
 class SimpleRequests:
+    _instance = None
+    _lock = threading.Lock()
 
     def __init__(self, base_url, token=None):
         self.base_url = base_url
         self.headers = {}
         if token:
-            self.headers['Authorization'] = f'Token {token}'
+            self.set_token(token)
+
+    @classmethod
+    def get_instance(cls, base_url):
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = cls(base_url)
+        return cls._instance
+
+    def set_token(self, token):
+        with self._lock:
+            self.headers['Authorization'] = token
 
     def get_url(self, endpoint):
         return self.base_url + endpoint
