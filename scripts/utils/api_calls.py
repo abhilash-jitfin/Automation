@@ -1,4 +1,5 @@
 import threading
+
 import requests
 
 
@@ -13,7 +14,7 @@ class SimpleRequests:
         Args:
             token: Authorization token (optional).
         """
-        self.base_url = "https://qa.appv2.kyss.ai/apis"
+        self.base_url = ApiConstants.BASE_URL
         self.headers = {}
         if token:
             self.set_token(token)
@@ -118,3 +119,10 @@ class SimpleRequests:
         response = requests.delete(self.get_url(endpoint), headers=self.headers, **kwargs)
         response.raise_for_status()
         return response.status_code
+
+
+class ApiConstants:
+    BASE_URL = "https://qa.appv2.kyss.ai/apis"
+    OTP_ENDPOINT = "/accounts/signin/otp"
+    VALIDATE_ENDPOINT = "/accounts/signin/otp/validate"
+    PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "/accounts/pre-register/file/upload"
