@@ -8,6 +8,7 @@ import tasks
 
 from scripts.tasks.abstract_task import BaseTask
 from scripts.utils.api_calls import SimpleRequests
+from scripts.utils.settings import generate_token, load_settings, save_settings
 
 
 def load_tasks():
@@ -50,48 +51,11 @@ def run_task(task_modules, choice):
     task.execute()
 
 
-def generate_token():
-    simple_requests = SimpleRequests.get_instance()
-
-    MAX_ATTEMPTS = 3
-
-    phone_number = input("\nEnter your mobile number: ")
-    # phone_number = "+919611412486"
-    otp_endpoint = "/accounts/signin/otp"
-    validate_endpoint = "/accounts/signin/otp/validate"
-
-    for attempt in range(MAX_ATTEMPTS):
-        try:
-            simple_requests.post(otp_endpoint, data={"phone_number": phone_number})
-
-            while True:
-                otp = input(
-                    "Enter the OTP received on your mobile (or type 'resend' to generate a new OTP): "
-                )
-                if otp.lower() == 'resend':
-                    break
-                elif otp.isdigit():
-                    response = simple_requests.post(
-                        validate_endpoint, data={"phone_number": phone_number, "otp": otp}
-                    )
-                    token = response.json().get('data', {}).get('token')
-                    if token:
-                        print("Token generated successfully.")
-                        print(f"token - {token}")
-                        simple_requests.set_token(token)
-                        return token
-                else:
-                    print("Invalid input. Please enter a numeric OTP or 'resend' to generate a new OTP.")
-        except requests.exceptions.RequestException as e:
-            print(f"\nAttempt {attempt + 1} failed. Error: {e}")
-            time.sleep(1)  # Wait for a second before retrying
-
-    print("\nMaximum attempts exceeded. Exiting the program.")
-    exit(1)
-
-
 def main():
-    generate_token()  # Generate the token before displaying the menu
+    settings = load_settings()
+    if not settings.get('token'):
+        settings['token'] = generate_token()  # Generate the token before displaying the menu
+        save_settings(settings)
     task_modules = load_tasks()
     while True:
         display_menu(task_modules)
