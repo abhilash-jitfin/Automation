@@ -51,12 +51,12 @@ def run_task(task_modules, choice):
 
 
 def generate_token():
-    base_url = "https://qa.appv2.kyss.ai/apis"
-    simple_requests = SimpleRequests(base_url)
+    simple_requests = SimpleRequests.get_instance()
 
     MAX_ATTEMPTS = 3
 
     phone_number = input("\nEnter your mobile number: ")
+    # phone_number = "+919611412486"
     otp_endpoint = "/accounts/signin/otp"
     validate_endpoint = "/accounts/signin/otp/validate"
 
@@ -74,9 +74,10 @@ def generate_token():
                     response = simple_requests.post(
                         validate_endpoint, data={"phone_number": phone_number, "otp": otp}
                     )
-                    token = response.get('data', {}).get('token')
+                    token = response.json().get('data', {}).get('token')
                     if token:
                         print("Token generated successfully.")
+                        print(f"token - {token}")
                         simple_requests.set_token(token)
                         return token
                 else:
