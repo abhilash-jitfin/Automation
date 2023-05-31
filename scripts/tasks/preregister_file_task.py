@@ -1,10 +1,11 @@
 import os
-import requests
-import time
 import pandas as pd
+import requests
+from halo import Halo
 
-from .abstract_task import BaseTask
 from ..utils.api_calls import SimpleRequests
+from ..utils.settings import load_settings
+from .abstract_task import BaseTask
 
 
 class PreRegisterFileProcessingTask(BaseTask):
@@ -12,6 +13,9 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def __init__(self, token=None):
         self.simple_requests = SimpleRequests.get_instance(token)
+        self.settings = load_settings()
+        if self.simple_requests.headers.get('Authorization') is None:
+            self.simple_requests.set_token(self.settings.get('token'))
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
@@ -21,11 +25,6 @@ class PreRegisterFileProcessingTask(BaseTask):
     def execute(self) -> None:
         """Execute the task."""
         df, gstin_dups_df, phone_number_dups_df = self.clean_file()
-        import pdb; pdb.set_trace()
-        if self.simple_requests.headers.get('Authorization') is None:
-            print("Token is missing. Please provide a valid token.")
-            return
-
         file_id = self.upload_file()
         if file_id:
             processed_file_id = self.process_file(file_id)
@@ -56,23 +55,29 @@ class PreRegisterFileProcessingTask(BaseTask):
     def create_duplicate_dfs(self, df, column):
         df = df.sort_values(by=column)
         previous = None
-        rows = []
+        result_df = pd.DataFrame(columns=['gstin', 'name', 'email', 'phone_number'])
+        rows = []  # Initialize an empty list for rows
 
-        for _, row in df.iterrows():
+        for index, row in df.iterrows():
             if previous is not None and previous[column] != row[column]:
                 rows.append(pd.DataFrame({'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']}))
             rows.append(row.to_frame().T)
             previous = row
 
-        result_df = pd.concat(rows)
-        return result_df
+        if rows:  # Check if the rows list is not empty
+            result_df = pd.concat(rows)
 
+        return result_df
 
     def upload_file(self) -> str:
         """Upload the file."""
+        spinner = Halo(text="Uploading File", spinner="dots")
+        spinner.start()
         try:
             response = self.simple_requests.post(
-                "/accounts/pre-register/file/upload", files={"files": open(self.file_path, "rb")}
+                "/accounts/pre-register/file/upload",
+                files={"files": open(self.file_path, "rb")},
+                stream=True,
             )
             file_id = None
             try:
@@ -81,41 +86,45 @@ class PreRegisterFileProcessingTask(BaseTask):
                 print("Failed to upload the file.")
                 return
             if file_id:
-                print("File uploaded successfully.")
+                spinner.succeed("File uploaded successfully.")
                 return file_id
         except requests.exceptions.RequestException as e:
-            print(f"Failed to upload the file. Error: {e}")
+            spinner.fail(f"Failed to upload the file. Error: {e}")
 
         return None
 
     def process_file(self, file_id: str) -> str:
         """Process the file."""
+        spinner = Halo(text="Processing File", spinner="dots")
+        spinner.start()
         try:
-            response = self.simple_requests.post(f"/accounts/pre-register/file/{file_id}/process")
+            response = self.simple_requests.post(f"/accounts/pre-register/file/{file_id}/process", stream=True)
             if response.status_code == 200:
-                print("File processed successfully.")
+                spinner.succeed("File processed successfully.")
                 return file_id
             else:
                 print("Failed to process the file.")
         except requests.exceptions.RequestException as e:
-            print(f"Failed to process the file. Error: {e}")
+            spinner.fail(f"Failed to process the file. Error: {e}")
 
         return None
 
     def download_file(self, file_id: str) -> None:
         """Download the processed file."""
+        spinner = Halo(text="Downloading File", spinner="dots")
+        spinner.start()
         try:
-            response = self.simple_requests.get(f"/accounts/pre-register/file/{file_id}/result")
+            response = self.simple_requests.get(f"/accounts/pre-register/file/{file_id}/result", stream=True)
             if response:
                 split = os.path.splitext(self.file_path)
                 output_file_path = os.path.join(
                     os.path.dirname(self.file_path), f"{split[0]}_output{split[1]}"
                 )
-                # filename = f"processed_{file_id}.xlsx"
                 with open(output_file_path, "wb") as file:
-                    file.write(response.content)
-                print(f"Processed file downloaded successfully: {os.path.basename(output_file_path)}")
+                    for chunk in response.iter_content(chunk_size=1024):
+                        file.write(chunk)
+                spinner.succeed(f"Processed file downloaded successfully: {os.path.basename(output_file_path)}")
             else:
-                print("Failed to download the processed file.")
+                spinner.fail("Failed to download the processed file.")
         except requests.exceptions.RequestException as e:
-            print(f"Failed to download the processed file. Error: {e}")
+            spinner.fail(f"Failed to download the processed file. Error: {e}")

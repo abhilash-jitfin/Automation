@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from halo import Halo
 
 from ..files.csv import CsvFile
 from ..files.excel import ExcelFile
+from ..utils.settings import load_settings
 from .abstract_task import BaseTask
 
 
@@ -19,6 +21,7 @@ class FileSplitTask(BaseTask):
     def __init__(self) -> None:
         """Initialize the task."""
         self.file = None
+        self.settings = load_settings()
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
@@ -34,4 +37,10 @@ class FileSplitTask(BaseTask):
 
     def execute(self) -> None:
         """Execute the task."""
-        self.file.split(self.output_dir, self.chunk_size)
+        spinner = Halo(text="Splitting File", spinner="dots")
+        spinner.start()
+        try:
+            self.file.split(self.output_dir, self.chunk_size)
+        except Exception as e:
+            spinner.fail(f"Failed to split the file. Error: {e}")
+        spinner.succeed("File splitting completed.")

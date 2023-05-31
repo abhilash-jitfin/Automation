@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+
 from .base import BaseFile
 
 
@@ -13,8 +14,19 @@ class CsvFile(BaseFile):
             os.makedirs(output_dir)
 
         chunk_number = 1
-        for chunk in pd.read_csv(self.filepath, chunksize=chunk_size):
+        for i, chunk in enumerate(pd.read_csv(self.filepath, chunksize=chunk_size)):
             base_name = f'chunk{chunk_number}.csv'
-            print(base_name)
-            chunk.to_csv(os.path.join(output_dir, base_name), index=False)
+            if i == 0:
+                chunk.to_csv(os.path.join(output_dir, base_name), index=False)
+                column_names = chunk.columns  # Extract column headings from the first chunk
+            else:
+                chunk.to_csv(os.path.join(output_dir, base_name), index=False, header=False)
+
+            # Append column headings to each split file
+            if i > 0:
+                with open(os.path.join(output_dir, base_name), 'r+') as file:
+                    content = file.read()
+                    file.seek(0, 0)
+                    file.write(','.join(column_names) + '\n' + content)
+
             chunk_number += 1
