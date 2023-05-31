@@ -138,3 +138,6 @@ some_key
 # misc
 .DS_Store
 *.xlsx
+
+# PROJECT SPECIFIC
+settings.json
