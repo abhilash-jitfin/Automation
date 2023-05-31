@@ -25,11 +25,30 @@ class PreRegisterFileProcessingTask(BaseTask):
     def execute(self) -> None:
         """Execute the task."""
         df, gstin_dups_df, phone_number_dups_df = self.clean_file()
+
+        input_file_name = os.path.basename(self.file_path)
+        output_dir = os.path.dirname(self.file_path)
+        output_unique_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_unique.xlsx")
+        output_gstin_dups_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_gstin_dups.xlsx")
+        output_phone_number_dups_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_phone_number_dups.xlsx")
+
+        # Preserve leading plus sign in phone number column
+        df['phone_number'] = df['phone_number'].astype('string')
+        gstin_dups_df['phone_number'] = gstin_dups_df['phone_number'].astype('string')
+        phone_number_dups_df['phone_number'] = phone_number_dups_df['phone_number'].astype('string')
+
+        df.to_excel(output_unique_file, index=False)
+        gstin_dups_df.to_excel(output_gstin_dups_file, index=False)
+        phone_number_dups_df.to_excel(output_phone_number_dups_file, index=False)
+
         file_id = self.upload_file()
         if file_id:
             processed_file_id = self.process_file(file_id)
             if processed_file_id:
                 self.download_file(processed_file_id)
+
+
+
 
     def clean_file(self):
         df = pd.read_excel(self.file_path)
