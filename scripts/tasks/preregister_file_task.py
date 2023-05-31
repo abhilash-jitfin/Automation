@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import pandas as pd
 
 from .abstract_task import BaseTask
 from ..utils.api_calls import SimpleRequests
@@ -19,6 +20,8 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def execute(self) -> None:
         """Execute the task."""
+        df, gstin_dups_df, phone_number_dups_df = self.clean_file()
+        import pdb; pdb.set_trace()
         if self.simple_requests.headers.get('Authorization') is None:
             print("Token is missing. Please provide a valid token.")
             return
@@ -28,6 +31,42 @@ class PreRegisterFileProcessingTask(BaseTask):
             processed_file_id = self.process_file(file_id)
             if processed_file_id:
                 self.download_file(processed_file_id)
+
+    def clean_file(self):
+        df = pd.read_excel(self.file_path)
+
+        # Create a DataFrame to represent the separator row
+        separator_df = pd.DataFrame({'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']})
+
+        has_gstin_duplicates = not df['gstin'].is_unique
+        gstin_duplicates_df = df[df.duplicated(subset=['gstin'], keep=False)]
+        gstin_duplicates_df = gstin_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
+
+        has_phone_number_duplicates = not df['phone_number'].is_unique
+        phone_number_duplicates_df = df[df.duplicated(subset=['phone_number'], keep=False)]
+        phone_number_duplicates_df = phone_number_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
+
+        gstin_dups_df = self.create_duplicate_dfs(gstin_duplicates_df, 'gstin')
+        phone_number_dups_df = self.create_duplicate_dfs(phone_number_duplicates_df, 'phone_number')
+
+        df = df.drop_duplicates(subset=['gstin'], keep=False)
+        df = df.drop_duplicates(subset=['phone_number'], keep=False)
+        return df, gstin_dups_df, phone_number_dups_df
+
+    def create_duplicate_dfs(self, df, column):
+        df = df.sort_values(by=column)
+        previous = None
+        rows = []
+
+        for _, row in df.iterrows():
+            if previous is not None and previous[column] != row[column]:
+                rows.append(pd.DataFrame({'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']}))
+            rows.append(row.to_frame().T)
+            previous = row
+
+        result_df = pd.concat(rows)
+        return result_df
+
 
     def upload_file(self) -> str:
         """Upload the file."""
