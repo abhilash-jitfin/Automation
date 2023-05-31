@@ -5,10 +5,14 @@ datadispatch==1.0.0
 et-xmlfile==1.1.0
 halo==0.0.31
 idna==3.4
+iniconfig==2.0.0
 log-symbols==0.0.14
 numpy==1.24.3
 openpyxl==3.1.2
+packaging==23.1
 pandas==2.0.1
+pluggy==1.0.0
+pytest==7.3.1
 python-dateutil==2.8.2
 pytz==2023.3
 requests==2.31.0
