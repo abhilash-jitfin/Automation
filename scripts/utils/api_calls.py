@@ -122,7 +122,8 @@ class SimpleRequests:
 
 
 class ApiConstants:
-    BASE_URL = "https://qa.appv2.kyss.ai/apis"
-    OTP_ENDPOINT = "/accounts/signin/otp"
-    VALIDATE_ENDPOINT = "/accounts/signin/otp/validate"
-    PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "/accounts/pre-register/file/upload"
+    BASE_URL = "https://qa.appv2.kyss.ai/apis/"
+    OTP_ENDPOINT = "accounts/signin/otp"
+    VALIDATE_ENDPOINT = "accounts/signin/otp/validate"
+    TAX_PAYER_ENDPOINT = "gst_lookup/taxpayer-info?gstin="
+    PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "accounts/pre-register/file/upload"
