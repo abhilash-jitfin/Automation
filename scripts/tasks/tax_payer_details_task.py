@@ -1,8 +1,9 @@
 import os
-import pandas as pd
 from datetime import datetime
 
-from ..utils.api_calls import SimpleRequests, ApiConstants
+import pandas as pd
+
+from ..utils.api_calls import ApiConstants, SimpleRequests
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
 
