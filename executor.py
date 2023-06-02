@@ -9,6 +9,7 @@ import tasks
 from scripts.tasks.abstract_task import BaseTask
 from scripts.utils.api_calls import SimpleRequests
 from scripts.utils.settings import generate_token, load_settings, save_settings
+from scripts.utils.strings import camel_case_to_sentence
 
 
 def load_tasks():
@@ -27,7 +28,7 @@ def display_menu(task_modules):
     print("       TASK SELECTION MENU")
     print("-" * 40)
     for i, (task_name, task_class) in enumerate(task_modules.items(), start=1):
-        print(f"{i}. {task_name} - {task_class.description}")
+        print(f"{i}. {camel_case_to_sentence(task_name)} - {task_class.description}")
     print(f"{len(task_modules) + 1}. Exit")
     print("-" * 40 + "\n")
 
