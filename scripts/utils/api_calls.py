@@ -122,7 +122,9 @@ class SimpleRequests:
 
 
 class ApiConstants:
-    BASE_URL = "https://qa.appv2.kyss.ai/apis/"
+    BASE_URL = "http://127.0.0.1:8000/apis/"
+    # BASE_URL = "https://app.kyss.ai/apis/"
+    # BASE_URL = "https://qa.appv2.kyss.ai/apis/"
     OTP_ENDPOINT = "accounts/signin/otp"
     VALIDATE_ENDPOINT = "accounts/signin/otp/validate"
     TAX_PAYER_ENDPOINT = "gst_lookup/taxpayer-info?gstin="

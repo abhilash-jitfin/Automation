@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from halo import Halo
 
-from ..utils.api_calls import SimpleRequests
+from ..utils.api_calls import SimpleRequests, ApiConstants
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
 
@@ -95,7 +95,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         spinner.start()
         try:
             response = self.simple_requests.post(
-                "/accounts/pre-register/file/upload",
+                ApiConstants.PRE_REGISTER_FILE_UPLOAD_ENDPOINT,
                 files={"files": open(self.file_path, "rb")},
                 stream=True,
             )
@@ -118,7 +118,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         spinner = Halo(text="Processing File", spinner="dots")
         spinner.start()
         try:
-            response = self.simple_requests.post(f"/accounts/pre-register/file/{file_id}/process", stream=True)
+            response = self.simple_requests.post(f"accounts/pre-register/file/{file_id}/process", stream=True)
             if response.status_code == 200:
                 spinner.succeed("File processed successfully.")
                 return file_id
@@ -134,7 +134,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         spinner = Halo(text="Downloading File", spinner="dots")
         spinner.start()
         try:
-            response = self.simple_requests.get(f"/accounts/pre-register/file/{file_id}/result", stream=True)
+            response = self.simple_requests.get(f"accounts/pre-register/file/{file_id}/result", stream=True)
             if response:
                 split = os.path.splitext(self.file_path)
                 output_file_path = os.path.join(
