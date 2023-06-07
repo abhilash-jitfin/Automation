@@ -1,5 +1,3 @@
-from abc import ABC, abstractmethod
-
 from halo import Halo
 
 from ..files.csv import CsvFile

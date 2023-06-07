@@ -98,7 +98,11 @@ class TaxPayerDetailsTask(BaseTask):
                     else:
                         print(f"No details found for GSTIN: {gstin}")
                 else:
-                    print(f"Failed to get taxpayer details for GSTIN: {gstin}. Response status code: {response.status_code}")
+                    message = (
+                        f"Failed to get taxpayer details for GSTIN: {gstin}. "
+                        f"Response status code: {response.status_code}"
+                    )
+                    print(message)
             except Exception as e:
                 print(f"Failed to get taxpayer details for GSTIN: {gstin}. Error: {e}")
 
