@@ -1,3 +1,4 @@
+from art import *
 import importlib
 import inspect
 import pkgutil
@@ -53,6 +54,10 @@ def run_task(task_modules, choice):
 
 
 def main():
+    space = " "
+    heading = text2art(f'{space*20} Automation Tasks {space*20}')
+    print('\n')
+    print(heading)
     settings = load_settings()
     if not settings.get('token'):
         settings['token'] = generate_token()  # Generate the token before displaying the menu
