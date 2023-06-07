@@ -1,10 +1,12 @@
 import os
+from typing import Optional
 
 import pandas as pd
 import requests
 from halo import Halo
 
-from ..utils.api_calls import SimpleRequests, ApiConstants
+from ..utils.api_calls import ApiConstants, SimpleRequests
+from ..utils.files import create_directory_if_not_exists
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
 
@@ -12,7 +14,7 @@ from .abstract_task import BaseTask
 class PreRegisterFileProcessingTask(BaseTask):
     description = "Task to upload, process, and download a file for pre-registration"
 
-    def __init__(self, token=None):
+    def __init__(self, token: Optional[str] = None):
         self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
         if self.simple_requests.headers.get('Authorization') is None:
@@ -20,7 +22,7 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
-        self.file_path = input("\nEnter the file path: ")
+        self.file_path = input("\nEnter the file path: ").strip()
         print("\n")
 
     def execute(self) -> None:
@@ -28,40 +30,51 @@ class PreRegisterFileProcessingTask(BaseTask):
         df, gstin_dups_df, phone_number_dups_df = self.clean_file()
 
         input_file_name = os.path.basename(self.file_path)
-        output_dir = os.path.dirname(self.file_path)
-        output_unique_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_unique.xlsx")
-        output_gstin_dups_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_gstin_dups.xlsx")
-        output_phone_number_dups_file = os.path.join(output_dir, f"{os.path.splitext(input_file_name)[0]}_phone_number_dups.xlsx")
+        name_without_extension, _ = os.path.splitext(input_file_name)
+        output_dir = os.path.join(os.path.dirname(self.file_path), name_without_extension)
+        create_directory_if_not_exists(output_dir)
 
-        # Preserve leading plus sign in phone number column
-        df['phone_number'] = df['phone_number'].astype('string')
-        gstin_dups_df['phone_number'] = gstin_dups_df['phone_number'].astype('string')
-        phone_number_dups_df['phone_number'] = phone_number_dups_df['phone_number'].astype('string')
+        files = [
+            (df, self.generate_file_name(input_file_name, "unique")),
+            (gstin_dups_df, self.generate_file_name(input_file_name, "gstin_dups")),
+            (phone_number_dups_df, self.generate_file_name(input_file_name, "phone_number_dups"))
+        ]
+        for df, file_name in files:
+            output_file = os.path.join(output_dir, file_name)
+            self.save_df_to_excel(df, output_file)
 
-        df.to_excel(output_unique_file, index=False)
-        gstin_dups_df.to_excel(output_gstin_dups_file, index=False)
-        phone_number_dups_df.to_excel(output_phone_number_dups_file, index=False)
-
+        self.file_path = os.path.join(output_dir, self.generate_file_name(input_file_name, "unique"))
         file_id = self.upload_file()
         if file_id:
             processed_file_id = self.process_file(file_id)
             if processed_file_id:
                 self.download_file(processed_file_id)
 
+    def generate_file_name(self, input_file_name: str, descriptor: str) -> str:
+        """Generate an output file name based on the input file name and a descriptor."""
+        return f"{os.path.splitext(input_file_name)[0]}_{descriptor}.xlsx"
 
+    def save_df_to_excel(self, df: pd.DataFrame, file_path: str) -> None:
+        """Save a DataFrame to an Excel file."""
+        df['phone_number'] = df['phone_number'].astype('string')
+        df['phone_number'] = df['phone_number'].apply(self.update_phone_number)
+        df.to_excel(file_path, index=False)
 
+    def update_phone_number(self, phone_number: str) -> str:
+        """Ensure phone number starts with '+91'."""
+        if phone_number.startswith('91') and len(phone_number) == 12:
+            phone_number = '+' + phone_number
+        elif not phone_number.startswith('+91') and len(phone_number) == 10:
+            phone_number = '+91' + phone_number
+
+        return phone_number
 
     def clean_file(self):
         df = pd.read_excel(self.file_path)
 
-        # Create a DataFrame to represent the separator row
-        separator_df = pd.DataFrame({'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']})
-
-        has_gstin_duplicates = not df['gstin'].is_unique
         gstin_duplicates_df = df[df.duplicated(subset=['gstin'], keep=False)]
         gstin_duplicates_df = gstin_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
 
-        has_phone_number_duplicates = not df['phone_number'].is_unique
         phone_number_duplicates_df = df[df.duplicated(subset=['phone_number'], keep=False)]
         phone_number_duplicates_df = phone_number_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
 
@@ -80,7 +93,10 @@ class PreRegisterFileProcessingTask(BaseTask):
 
         for index, row in df.iterrows():
             if previous is not None and previous[column] != row[column]:
-                rows.append(pd.DataFrame({'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']}))
+                rows.append(pd.DataFrame({
+                        'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']
+                    }
+                ))
             rows.append(row.to_frame().T)
             previous = row
 
@@ -94,11 +110,12 @@ class PreRegisterFileProcessingTask(BaseTask):
         spinner = Halo(text="Uploading File", spinner="dots")
         spinner.start()
         try:
-            response = self.simple_requests.post(
-                ApiConstants.PRE_REGISTER_FILE_UPLOAD_ENDPOINT,
-                files={"files": open(self.file_path, "rb")},
-                stream=True,
-            )
+            with open(self.file_path, "rb") as f:
+                response = self.simple_requests.post(
+                    ApiConstants.PRE_REGISTER_FILE_UPLOAD_ENDPOINT,
+                    files={"files": f},
+                    stream=True,
+                )
             file_id = None
             try:
                 file_id = int(response.json().get('data', '')[-2:])
