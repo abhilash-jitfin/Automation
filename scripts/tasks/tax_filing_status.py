@@ -106,6 +106,7 @@ class TaxFilingStatusTask(BaseTask):
             filename = file
             extension = filename.split(".")[-1].upper()
             if extension not in supported_extensions:
+                print(format_text(f'The file `{filename}` is not a valid input file.\n', colour=COLOUR_RED))
                 continue
             file_path = os.path.join(self.directory_path, filename)
             if not os.path.isfile(file_path):
