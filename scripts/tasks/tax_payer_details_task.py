@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from ..utils.api_calls import ApiConstants, SimpleRequests
+from ..utils.api_calls import ApiService, SimpleRequests
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
 
@@ -90,7 +90,8 @@ class TaxPayerDetailsTask(BaseTask):
 
         for i, gstin in enumerate(gstins, start=1):
             try:
-                response = self.simple_requests.get(f"{ApiConstants.TAX_PAYER_ENDPOINT}{gstin}")
+                print(f"{i}) {gstin}\n")
+                response = self.simple_requests.get(f"{ApiService.TAX_PAYER_ENDPOINT}{gstin}")
                 if response.json().get('success'):
                     data = response.json().get("data", {})
                     if data:

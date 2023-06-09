@@ -1,4 +1,5 @@
 import os
+from typing import List, Optional
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -14,7 +15,7 @@ class ExcelFile(BaseFile):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        workbook = load_workbook(self.filepath)
+        workbook = load_workbook(self.file_path)
         sheet = workbook.active
         total_rows = sheet.max_row
         headings = [cell.value for cell in sheet[1]]
@@ -25,3 +26,8 @@ class ExcelFile(BaseFile):
             df.to_excel(
                 os.path.join(output_dir, f'chunk{i//chunk_size + 1}.xlsx'), index=False
             )
+
+    def read(self, sheet: Optional[str] = None, columns_to_read: Optional[List[str]] = None) -> pd.DataFrame:
+        df = pd.read_excel(self.file_path, sheet_name=sheet if sheet is not None else 0,
+                           usecols=columns_to_read)
+        return df

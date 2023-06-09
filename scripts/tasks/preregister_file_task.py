@@ -5,7 +5,7 @@ import pandas as pd
 import requests
 from halo import Halo
 
-from ..utils.api_calls import ApiConstants, SimpleRequests
+from ..utils.api_calls import ApiService, SimpleRequests
 from ..utils.files import create_directory_if_not_exists
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
@@ -112,7 +112,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         try:
             with open(self.file_path, "rb") as f:
                 response = self.simple_requests.post(
-                    ApiConstants.PRE_REGISTER_FILE_UPLOAD_ENDPOINT,
+                    ApiService.PRE_REGISTER_FILE_UPLOAD_ENDPOINT,
                     files={"files": f},
                     stream=True,
                 )

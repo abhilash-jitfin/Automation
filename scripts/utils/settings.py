@@ -4,7 +4,7 @@ import time
 
 import requests
 
-from .api_calls import ApiConstants, SimpleRequests
+from .api_calls import ApiService, SimpleRequests
 
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'settings.json')
 
@@ -30,14 +30,14 @@ def generate_token():
     phone_number = input("Enter your mobile number: ")
     for attempt in range(MAX_ATTEMPTS):
         try:
-            simple_requests.post(ApiConstants.OTP_ENDPOINT, data={"phone_number": phone_number})
+            simple_requests.post(ApiService.OTP_ENDPOINT, data={"phone_number": phone_number})
             while True:
                 otp = input("Enter the OTP received on your mobile (or type 'resend' to generate a new OTP): ")
                 if otp.lower() == "resend":
                     break
                 elif otp.isdigit():
                     response = simple_requests.post(
-                        ApiConstants.VALIDATE_ENDPOINT, data={"phone_number": phone_number, "otp": otp}
+                        ApiService.VALIDATE_ENDPOINT, data={"phone_number": phone_number, "otp": otp}
                     )
                     token = response.json().get("data", {}).get("token")
                     if token:

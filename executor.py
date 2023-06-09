@@ -11,6 +11,7 @@ from scripts.tasks.abstract_task import BaseTask
 from scripts.utils.api_calls import SimpleRequests
 from scripts.utils.settings import generate_token, load_settings, save_settings
 from scripts.utils.strings import camel_case_to_sentence
+from scripts.utils.terminal import COLOURS, format_text
 
 
 def load_tasks():
@@ -38,6 +39,7 @@ def get_user_choice(task_modules):
     while True:
         try:
             choice = int(input(f"Choose a task number or {len(task_modules) + 1} to Exit: ")) - 1
+            print()
             if choice < 0 or choice > len(task_modules):
                 raise ValueError("Invalid choice, please enter a number corresponding to the task.")
             return choice
@@ -53,16 +55,20 @@ def run_task(task_modules, choice):
     task.execute()
 
 
-def main():
+def print_heading():
     space = " "
     heading = text2art(f'{space*20} Automation Tasks {space*20}')
     print('\n')
-    print(heading)
+    print(f"{format_text(heading, color=COLOURS['cyan'], bold=True)}")
+
+
+def main():
     settings = load_settings()
+    task_modules = load_tasks()
+    print_heading()
     if not settings.get('token'):
         settings['token'] = generate_token()  # Generate the token before displaying the menu
         save_settings(settings)
-    task_modules = load_tasks()
     while True:
         display_menu(task_modules)
         choice = get_user_choice(task_modules)

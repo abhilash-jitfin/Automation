@@ -14,7 +14,7 @@ class SimpleRequests:
         Args:
             token: Authorization token (optional).
         """
-        self.base_url = ApiConstants.BASE_URL
+        self.base_url = ApiService.BASE_URL
         self.headers = {}
         if token:
             self.set_token(token)
@@ -121,11 +121,66 @@ class SimpleRequests:
         return response.status_code
 
 
-class ApiConstants:
+class ApiService:
     # BASE_URL = "http://127.0.0.1:8000/apis/"
     # BASE_URL = "https://app.kyss.ai/apis/"
     BASE_URL = "https://qa.appv2.kyss.ai/apis/"
     OTP_ENDPOINT = "accounts/signin/otp"
     VALIDATE_ENDPOINT = "accounts/signin/otp/validate"
     TAX_PAYER_ENDPOINT = "gst_lookup/taxpayer-info?gstin="
+    TAX_FILING_STATUS_END_POINT = "supplier/gstr-filing-data?gstin="
     PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "accounts/pre-register/file/upload"
+
+    def __init__(self, token: str = None):
+        self.requester = SimpleRequests.get_instance(token)
+
+    def call_otp_endpoint(self, data):
+        """
+        Call the OTP endpoint with given data.
+
+        Args:
+            data: Data for the OTP request.
+        """
+        return self.requester.post(self.OTP_ENDPOINT, data=data)
+
+    def call_validate_endpoint(self, data):
+        """
+        Call the validate endpoint with given data.
+
+        Args:
+            data: Data for the validate request.
+        """
+        return self.requester.post(self.VALIDATE_ENDPOINT, data=data)
+
+    def call_taxpayer_endpoint(self, gstin):
+        """
+        Call the tax payer endpoint with a given GSTIN.
+
+        Args:
+            gstin: GSTIN to be used for the request.
+
+        Returns:
+            JSON response as a dictionary.
+        """
+        return self.requester.get(f"{self.TAX_PAYER_ENDPOINT}{gstin}")
+
+    def call_pre_register_file_upload_endpoint(self, data):
+        """
+        Call the pre-register file upload endpoint with given data.
+
+        Args:
+            data: Data for the file upload request.
+        """
+        return self.requester.post(self.PRE_REGISTER_FILE_UPLOAD_ENDPOINT, data=data)
+
+    def call_tax_filing_status_endpoint(self, gstin):
+        """
+        Call the tax filing status endpoint with a given GSTIN.
+
+        Args:
+            gstin: GSTIN to be used for the request.
+
+        Returns:
+            JSON response as a dictionary.
+        """
+        return self.requester.get(f"{self.TAX_FILING_STATUS_END_POINT}{gstin}")
