@@ -7,7 +7,7 @@ from art import text2art
 from scripts.tasks.abstract_task import BaseTask
 from scripts.utils.settings import generate_token, load_settings, save_settings
 from scripts.utils.strings import camel_case_to_sentence
-from scripts.utils.terminal import COLOUR_MAGENTA, format_text, get_clean_input
+from scripts.utils.terminal import COLOUR_ORANGE, format_text, get_clean_input
 
 
 def load_tasks():
@@ -54,7 +54,7 @@ def run_task(task_modules, choice):
 def print_heading():
     space = " "
     heading = text2art(f'{space*20} Automation Tasks {space*20}')
-    fromated_heading = format_text(heading, colour=COLOUR_MAGENTA, bold=True)
+    fromated_heading = format_text(heading, colour=COLOUR_ORANGE, bold=True)
     print('\n')
     print(fromated_heading)
 
