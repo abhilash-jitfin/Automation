@@ -43,7 +43,7 @@ class TaxFilingStatusTask(BaseTask):
         Get parameters for the task from the user.
         """
         while True:
-            self.directory_path = get_clean_input("Enter the directory path containing the files: ")
+            self.directory_path = get_clean_input("Give the directory path containing the input files: ")
             print()
             if is_valid_directory_path(self.directory_path):
                 break
