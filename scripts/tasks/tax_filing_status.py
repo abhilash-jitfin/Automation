@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from halo import Halo
@@ -18,7 +18,9 @@ from .abstract_task import BaseTask
 
 
 class TaxFilingStatusTask(BaseTask):
-    description = "Task to get the tax filing details, GSTR1 and GSTR3B, for a number of GSTINs in a file."
+    """
+    A task to retrieve tax filing details for multiple GSTINs from a file.
+    """
 
     FILE_CLASSES = {
         "CSV": CsvFile,
@@ -26,6 +28,10 @@ class TaxFilingStatusTask(BaseTask):
     }
 
     def __init__(self, token: Optional[str] = None):
+        """
+        Initialize TaxFilingStatusTask with token.
+        :param token: API token, optional
+        """
         self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
         if self.simple_requests.headers.get("Authorization") is None:
@@ -33,7 +39,9 @@ class TaxFilingStatusTask(BaseTask):
         self.api_service = ApiService(token=self.settings.get("token"))
 
     def get_params(self) -> None:
-        """Get parameters for the task from the user."""
+        """
+        Get parameters for the task from the user.
+        """
         while True:
             self.directory_path = get_clean_input("Enter the directory path containing the files: ")
             print()
@@ -59,6 +67,9 @@ class TaxFilingStatusTask(BaseTask):
             break
 
     def execute(self) -> None:
+        """
+        Execute the task by processing files in the given directory.
+        """
         files = self.get_input_files()
         print(f"{files}\n")
 
@@ -69,7 +80,11 @@ class TaxFilingStatusTask(BaseTask):
             print(input_file.file_path)
             self.generate_output_file(input_file)
 
-    def get_input_files(self):
+    def get_input_files(self) -> List[BaseFile]:
+        """
+        Retrieve input files from the specified directory path.
+        :return: List of file instances
+        """
         files = []
         if not os.path.isdir(self.directory_path):
             message = f"{self.directory_path} is not a valid directory."
@@ -80,39 +95,43 @@ class TaxFilingStatusTask(BaseTask):
         for file in os.listdir(self.directory_path):
             filename = file
             extension = filename.split(".")[-1].upper()
-            # Filter out files that are not of supported file types
             if extension not in supported_extensions:
-                message = (
-                    f"The object `{filename}` can not be used because "
-                    "it is not a file with allowed extensions."
-                    f" Only allowed extensions are {', '.join(supported_extensions)}\n"
-                )
-                print(format_text(message, colour=COLOUR_RED))
                 continue
-
             file_path = os.path.join(self.directory_path, filename)
             if not os.path.isfile(file_path):
-                print(format_text(f"The object `{filename}` is not a file.\n", colour=COLOUR_RED))
                 continue
             file_instance = self.FILE_CLASSES[extension](file_path)
             files.append(file_instance)
         return files
 
-    def get_gstins(self, file: BaseFile) -> None:
+    def get_gstins(self, file: BaseFile) -> List[str]:
+        """
+        Retrieve GSTINs from the file.
+        :param file: Input file
+        :return: List of GSTINs
+        """
         file_df = file.read()
         gstin_column = next((col for col in file_df.columns if col.lower() == "gstin"), None)
         if gstin_column:
-            gstins = file_df[gstin_column].tolist()
-            return gstins
+            return file_df[gstin_column].tolist()
         print("Column 'gstin' does not exist.")
         raise ValidationError("Column 'gstin' does not exist.")
 
-    def generate_output_file_path(self, file_name):
+    def generate_output_file_path(self, file_name: str) -> str:
+        """
+        Generate output file path for a given file name.
+        :param file_name: Name of the input file
+        :return: Path to the output file
+        """
         base_name = os.path.basename(file_name)
         base, extension = os.path.splitext(base_name)
         return os.path.join(self.directory_path, "output", f"{base}_output{extension}")
 
     def generate_output_file(self, file: BaseFile) -> None:
+        """
+        Generate output file containing tax filing data for GSTINs.
+        :param file: Input file containing GSTINs
+        """
         gstins = self.get_gstins(file)
         output_file_path = self.generate_output_file_path(file.file_path)
         data = []
@@ -122,14 +141,19 @@ class TaxFilingStatusTask(BaseTask):
             tax_payer_data = tax_payer_response.json()["data"]
             filing_data = tax_filing_response.json()["data"]["filing_data"]
             row_data = self.get_row_data(tax_payer_data, filing_data)
-            print(row_data)
             data.append(row_data)
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
 
-    def get_row_data(self, tax_payer_data: dict, tax_filing_data: dict) -> dict:
+    def get_row_data(self, tax_payer_data: Dict[str, str], tax_filing_data: Dict[str, str]) -> Dict[str, str]:
+        """
+        Extract relevant row data from tax payer data and tax filing data.
+        :param tax_payer_data: Dictionary of tax payer data
+        :param tax_filing_data: Dictionary of tax filing data
+        :return: A dictionary of relevant data for a single row
+        """
         filing_data = self.get_filing_data(tax_filing_data)
-        row_data = {
+        return {
             "gstin": tax_payer_data["gstin"],
             "trade_name": tax_payer_data["trade_name"],
             "legal_name": tax_payer_data["legal_name"],
@@ -140,10 +164,13 @@ class TaxFilingStatusTask(BaseTask):
             "gstr1": filing_data["gstr1"],
             "gstr3b": filing_data["gstr3b"],
         }
-        print(f"{tax_payer_data['gstin']}\n")
-        return row_data
 
-    def get_filing_data(self, data):
+    def get_filing_data(self, data: Dict[str, Union[str, List[Dict]]]) -> Dict[str, str]:
+        """
+        Retrieve filing data from the data dictionary.
+        :param data: Dictionary containing filing data
+        :return: A dictionary of filing data
+        """
         return next((entry for entry in data if entry["return_period"] == self.filing_period), {
             "return_period": self.filing_period, "gstr1": "-", "gstr3b": "-"
         })
