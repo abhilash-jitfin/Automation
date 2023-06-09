@@ -9,6 +9,7 @@ COLOUR_CYAN = 'cyan'
 COLOUR_GREEN = 'green'
 COLOUR_WHITE = 'white'
 COLOUR_YELLOW = 'yellow'
+COLOUR_ORANGE = 'orange'
 COLOUR_MAGENTA = 'magenta'
 
 COLOURS = {
@@ -18,6 +19,7 @@ COLOURS = {
     COLOUR_GREEN: "\033[32m",
     COLOUR_WHITE: "\033[37m",
     COLOUR_YELLOW: "\033[33m",
+    COLOUR_ORANGE: "\033[38;5;208m",
     COLOUR_MAGENTA: "\033[35m",
 }
 
