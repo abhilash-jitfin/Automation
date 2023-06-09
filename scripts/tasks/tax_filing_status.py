@@ -70,12 +70,22 @@ class TaxFilingStatusTask(BaseTask):
         """
         Execute the task by processing files in the given directory.
         """
+        self.prepare_output_directory()
         files = self.get_input_files()
-        print(f"{files}\n")
+        self.process_files(files)
 
+    def prepare_output_directory(self) -> None:
+        """
+        Prepare the output directory where the results will be saved.
+        """
         self.output_dir = os.path.join(self.directory_path, "output")
         create_directory_if_not_exists(self.output_dir)
 
+    def process_files(self, files: List[BaseFile]) -> None:
+        """
+        Process each file in the given list of files.
+        :param files: List of file instances to be processed
+        """
         for input_file in files:
             print(input_file.file_path)
             self.generate_output_file(input_file)
