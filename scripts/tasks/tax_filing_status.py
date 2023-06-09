@@ -1,18 +1,19 @@
 import os
-from typing import Optional, List
+from typing import Optional
 
 import pandas as pd
-import requests
 from halo import Halo
 
+from ..exceptions import ValidationError
 from ..files.base import BaseFile
 from ..files.csv import CsvFile
 from ..files.excel import ExcelFile
 from ..utils.api_calls import ApiService, SimpleRequests
 from ..utils.date_time import change_datetime_format, is_valid_period
-from ..utils.files import create_directory_if_not_exists, is_valid_directory_path
+from ..utils.files import (create_directory_if_not_exists,
+                           is_valid_directory_path)
 from ..utils.settings import load_settings
-from ..utils.terminal import COLOURS, format_text
+from ..utils.terminal import COLOUR_RED, format_text, get_clean_input
 from .abstract_task import BaseTask
 
 
@@ -34,32 +35,28 @@ class TaxFilingStatusTask(BaseTask):
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
         while True:
-            self.directory_path = input("Enter the directory path containing the files: ").strip()
+            self.directory_path = get_clean_input("Enter the directory path containing the files: ")
             print()
             if is_valid_directory_path(self.directory_path):
                 break
-            print(
-                (
-                    f"The path given `{format_text(self.directory_path, colour=COLOURS['red'], bold=True)}`"
-                    " is not valid or it is a file. "
-                    "Please provide a valid directory path!"
-                )
+            message = (
+                f"The path given `{self.directory_path}` is not valid or it is a file. "
+                "Please provide a valid directory path!"
             )
-            print()
+            print(f"{format_text(message, colour=COLOUR_RED)}\n")
 
         while True:
-            filing_period = input("Enter the filing period (format is MM-YYYY): ").strip()
+            filing_period = get_clean_input("Enter the filing period (format is MM-YYYY): ")
             print()
             if not is_valid_period(filing_period, "%m-%Y"):
                 message = (
                     f"'{filing_period}' has an invalid format. "
                     "Please enter the filing period in the format 'MM-YYYY'.\n"
                 )
-                print(format_text(message, colour_code=COLOURS['red']))
+                print(f"{format_text(message, colour=COLOUR_RED)}\n")
                 continue
             self.filing_period = change_datetime_format(filing_period, "%m-%Y", "%b %Y")
             break
-
 
     def execute(self) -> None:
         files = self.get_input_files()
@@ -74,24 +71,31 @@ class TaxFilingStatusTask(BaseTask):
 
     def get_input_files(self):
         files = []
-        directory = os.fsencode(self.directory_path)
-        for file in os.listdir(directory):
-            filename = os.fsdecode(file)
-            file_path = os.path.join(directory.decode("utf-8"), filename)
-            if not os.path.isfile(file_path):
-                print(f"The object `{filename}` is not a file.\n")
-                continue
+        if not os.path.isdir(self.directory_path):
+            message = f"{self.directory_path} is not a valid directory."
+            print(format_text(message, colour=COLOUR_RED))
+            return files
+
+        supported_extensions = self.FILE_CLASSES.keys()
+        for file in os.listdir(self.directory_path):
+            filename = file
             extension = filename.split(".")[-1].upper()
-            if extension not in self.FILE_CLASSES.keys():
-                print(
-                    (
-                        f"The object `{filename}` can not be used because it is not a file which allowed."
-                        f" Only allowed extensions are {', '.join(self.FILE_CLASSES.keys())}\n"
-                    )
+            # Filter out files that are not of supported file types
+            if extension not in supported_extensions:
+                message = (
+                    f"The object `{filename}` can not be used because "
+                    "it is not a file with allowed extensions."
+                    f" Only allowed extensions are {', '.join(supported_extensions)}\n"
                 )
+                print(format_text(message, colour=COLOUR_RED))
                 continue
-            file = self.FILE_CLASSES[extension](file_path)
-            files.append(file)
+
+            file_path = os.path.join(self.directory_path, filename)
+            if not os.path.isfile(file_path):
+                print(format_text(f"The object `{filename}` is not a file.\n", colour=COLOUR_RED))
+                continue
+            file_instance = self.FILE_CLASSES[extension](file_path)
+            files.append(file_instance)
         return files
 
     def get_gstins(self, file: BaseFile) -> None:
