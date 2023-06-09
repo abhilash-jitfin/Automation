@@ -1,6 +1,3 @@
-import Exception
-
-
 class ValidationError(Exception):
     """Custom Validation Error"""
 
