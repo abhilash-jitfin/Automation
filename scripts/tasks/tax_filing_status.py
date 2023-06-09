@@ -54,7 +54,11 @@ class TaxFilingStatusTask(BaseTask):
             print(f"{format_text(message, colour=COLOUR_RED)}\n")
 
         while True:
-            filing_period = get_clean_input("Enter the filing period (format is MM-YYYY): ")
+            prompt_question = (
+                "For which filing period do you want to fetch the data "
+                "(format is MM-YYYY. e.g 03-2023 for March 2023): "
+            )
+            filing_period = get_clean_input(prompt_question)
             print()
             if not is_valid_period(filing_period, "%m-%Y"):
                 message = (
