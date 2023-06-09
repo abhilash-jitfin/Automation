@@ -135,13 +135,15 @@ class TaxFilingStatusTask(BaseTask):
         gstins = self.get_gstins(file)
         output_file_path = self.generate_output_file_path(file.file_path)
         data = []
-        for gstin in gstins:
+        for index, gstin in enumerate(gstins, start=1):
             tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
             tax_filing_response = self.api_service.call_tax_filing_status_endpoint(gstin)
             tax_payer_data = tax_payer_response.json()["data"]
             filing_data = tax_filing_response.json()["data"]["filing_data"]
             row_data = self.get_row_data(tax_payer_data, filing_data)
+            print(f"{index}) Processing '{gstin}'")
             data.append(row_data)
+        print()
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
 
