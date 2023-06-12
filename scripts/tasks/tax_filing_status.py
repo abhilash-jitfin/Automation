@@ -15,7 +15,8 @@ from ..utils.date_time import change_datetime_format, is_valid_period
 from ..utils.files import (create_directory_if_not_exists,
                            is_valid_directory_path)
 from ..utils.settings import load_settings
-from ..utils.terminal import COLOUR_ORANGE, COLOUR_RED, format_text, get_clean_input
+from ..utils.terminal import (COLOUR_ORANGE, COLOUR_RED, format_text,
+                              get_clean_input)
 from .abstract_task import BaseTask
 
 
@@ -23,7 +24,7 @@ class TaxFilingStatusTask(BaseTask):
     """
     A task to retrieve tax filing details for multiple GSTINs from a file.
     """
-
+    description = "Task to retrieve tax filing details for multiple GSTINs from a file."
     FILE_CLASSES = {
         "CSV": CsvFile,
         "XLSX": ExcelFile
@@ -162,12 +163,12 @@ class TaxFilingStatusTask(BaseTask):
             halo_message = format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE)
             with Halo(text=halo_message, spinner='dots') as spinner:
                 tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
+                tax_payer_data = tax_payer_response.json()["data"]
                 try:
                     tax_filing_response = self.api_service.call_tax_filing_status_endpoint(gstin)
                 except HTTPError:
                     filing_data = [{"return_period": self.filing_period, "gstr1": "-", "gstr3b": "-"}]
                 else:
-                    tax_payer_data = tax_payer_response.json()["data"]
                     if tax_filing_response.json()["data"]:
                         filing_data = tax_filing_response.json()["data"]["filing_data"]
                 row_data = self.get_row_data(tax_payer_data, filing_data)
