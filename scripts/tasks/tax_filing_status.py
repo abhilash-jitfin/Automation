@@ -1,8 +1,10 @@
 import os
+import time
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from halo import Halo
+from requests.exceptions import HTTPError
 
 from ..exceptions import ValidationError
 from ..files.base import BaseFile
@@ -13,7 +15,7 @@ from ..utils.date_time import change_datetime_format, is_valid_period
 from ..utils.files import (create_directory_if_not_exists,
                            is_valid_directory_path)
 from ..utils.settings import load_settings
-from ..utils.terminal import COLOUR_RED, format_text, get_clean_input
+from ..utils.terminal import COLOUR_ORANGE, COLOUR_RED, format_text, get_clean_input
 from .abstract_task import BaseTask
 
 
@@ -92,7 +94,13 @@ class TaxFilingStatusTask(BaseTask):
         """
         for input_file in files:
             print(input_file.file_path)
+            start_time = time.time()
             self.generate_output_file(input_file)
+            end_time = time.time()
+            time_taken = ((end_time - start_time)/60)
+            print(
+                f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n"
+            )
 
     def get_input_files(self) -> List[BaseFile]:
         """
@@ -140,7 +148,7 @@ class TaxFilingStatusTask(BaseTask):
         """
         base_name = os.path.basename(file_name)
         base, extension = os.path.splitext(base_name)
-        return os.path.join(self.directory_path, "output", f"{base}_output{extension}")
+        return os.path.join(self.directory_path, "output", f"{base}_output.xlsx")
 
     def generate_output_file(self, file: BaseFile) -> None:
         """
@@ -151,16 +159,24 @@ class TaxFilingStatusTask(BaseTask):
         output_file_path = self.generate_output_file_path(file.file_path)
         data = []
         for index, gstin in enumerate(gstins, start=1):
-            tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
-            tax_filing_response = self.api_service.call_tax_filing_status_endpoint(gstin)
-            tax_payer_data = tax_payer_response.json()["data"]
-            filing_data = tax_filing_response.json()["data"]["filing_data"]
-            row_data = self.get_row_data(tax_payer_data, filing_data)
-            print(f"{index}) Processing '{gstin}'")
-            data.append(row_data)
-        print()
+            halo_message = format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE)
+            with Halo(text=halo_message, spinner='dots') as spinner:
+                tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
+                try:
+                    tax_filing_response = self.api_service.call_tax_filing_status_endpoint(gstin)
+                except HTTPError:
+                    filing_data = [{"return_period": self.filing_period, "gstr1": "-", "gstr3b": "-"}]
+                else:
+                    tax_payer_data = tax_payer_response.json()["data"]
+                    if tax_filing_response.json()["data"]:
+                        filing_data = tax_filing_response.json()["data"]["filing_data"]
+                row_data = self.get_row_data(tax_payer_data, filing_data)
+                data.append(row_data)
+                spinner.succeed(f"{index}) Processed '{gstin}'")
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
+        print(f"Created the output file - {output_file_path}")
+        print()
 
     def get_row_data(self, tax_payer_data: Dict[str, str], tax_filing_data: Dict[str, str]) -> Dict[str, str]:
         """
