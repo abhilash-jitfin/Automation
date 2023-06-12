@@ -24,13 +24,13 @@ class FileSplitTask(BaseTask):
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
-        filepath = input("Enter the file path: ")
-        extension = filepath.split('.')[-1].lower()
+        file_path = input("Enter the file path: ")
+        extension = file_path.split('.')[-1].lower()
 
         if extension not in self.FILE_CLASSES:
             raise ValueError(f"Unsupported file type: {extension}")
 
-        self.file = self.FILE_CLASSES[extension](filepath)
+        self.file = self.FILE_CLASSES[extension](file_path)
         self.output_dir = input("Enter the output directory: ")
         self.chunk_size = int(input("Enter the chunk size: "))
 

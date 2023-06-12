@@ -1,4 +1,5 @@
 import os
+from typing import List, Optional
 
 import pandas as pd
 
@@ -14,7 +15,7 @@ class CsvFile(BaseFile):
             os.makedirs(output_dir)
 
         chunk_number = 1
-        for i, chunk in enumerate(pd.read_csv(self.filepath, chunksize=chunk_size)):
+        for i, chunk in enumerate(pd.read_csv(self.file_path, chunksize=chunk_size)):
             base_name = f'chunk{chunk_number}.csv'
             if i == 0:
                 chunk.to_csv(os.path.join(output_dir, base_name), index=False)
@@ -30,3 +31,7 @@ class CsvFile(BaseFile):
                     file.write(','.join(column_names) + '\n' + content)
 
             chunk_number += 1
+
+    def read(self, columns_to_read: Optional[List[str]] = None):
+        df = pd.read_csv(self.file_path, usecols=columns_to_read)
+        return df

@@ -1,16 +1,13 @@
-from art import *
 import importlib
 import inspect
 import pkgutil
-import time
 
-import requests
-import tasks
+from art import text2art
 
 from scripts.tasks.abstract_task import BaseTask
-from scripts.utils.api_calls import SimpleRequests
 from scripts.utils.settings import generate_token, load_settings, save_settings
 from scripts.utils.strings import camel_case_to_sentence
+from scripts.utils.terminal import COLOUR_ORANGE, format_text, get_clean_input
 
 
 def load_tasks():
@@ -37,12 +34,13 @@ def display_menu(task_modules):
 def get_user_choice(task_modules):
     while True:
         try:
-            choice = int(input(f"Choose a task number or {len(task_modules) + 1} to Exit: ")) - 1
+            choice = get_clean_input(f"Choose a task number or {len(task_modules) + 1} to Exit: ", int) - 1
+            print()
             if choice < 0 or choice > len(task_modules):
                 raise ValueError("Invalid choice, please enter a number corresponding to the task.")
             return choice
         except ValueError as e:
-            print(e)
+            print(f"{e}\n")
 
 
 def run_task(task_modules, choice):
@@ -53,16 +51,21 @@ def run_task(task_modules, choice):
     task.execute()
 
 
-def main():
+def print_heading():
     space = " "
     heading = text2art(f'{space*20} Automation Tasks {space*20}')
+    fromated_heading = format_text(heading, colour=COLOUR_ORANGE, bold=True)
     print('\n')
-    print(heading)
+    print(fromated_heading)
+
+
+def main():
     settings = load_settings()
+    task_modules = load_tasks()
+    print_heading()
     if not settings.get('token'):
         settings['token'] = generate_token()  # Generate the token before displaying the menu
         save_settings(settings)
-    task_modules = load_tasks()
     while True:
         display_menu(task_modules)
         choice = get_user_choice(task_modules)
