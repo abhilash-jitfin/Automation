@@ -5,6 +5,7 @@ import pkgutil
 from art import text2art
 
 from scripts.tasks.abstract_task import BaseTask
+from scripts.utils.api_calls import Env
 from scripts.utils.settings import generate_token, load_settings, save_settings
 from scripts.utils.strings import camel_case_to_sentence
 from scripts.utils.terminal import COLOUR_ORANGE, format_text, get_clean_input
@@ -59,13 +60,43 @@ def print_heading():
     print(fromated_heading)
 
 
+def get_environment():
+    envs = [env for env in Env]
+    print("\nSelect Environment:")
+    for i, env in enumerate(envs, start=1):
+        print(f"{i}. {env.name}")
+
+    while True:
+        try:
+            print("\n")
+            choice = int(input(f"Enter the number corresponding to the environment (1-{len(envs)}): "))
+            if 1 <= choice <= len(envs):
+                return envs[choice-1]
+            else:
+                print("Invalid choice. Please enter a valid number.\n")
+        except ValueError:
+            print("Invalid input. Please enter a number.\n")
+
+
 def main():
     settings = load_settings()
     task_modules = load_tasks()
     print_heading()
-    if not settings.get('token'):
-        settings['token'] = generate_token()  # Generate the token before displaying the menu
+
+    # Always ask the user to select an environment
+    env = get_environment()
+    settings['environment'] = env.value
+
+    # Save the settings
+    save_settings(settings)
+
+    # Generate token if not already present in settings
+    if not settings.get(env.value, {}).get('token'):
+        # Assuming you have defined generate_token elsewhere
+        token = generate_token(env)
+        settings.setdefault(env.value, {})['token'] = token
         save_settings(settings)
+
     while True:
         display_menu(task_modules)
         choice = get_user_choice(task_modules)

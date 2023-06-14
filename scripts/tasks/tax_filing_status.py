@@ -10,7 +10,7 @@ from ..exceptions import ValidationError
 from ..files.base import BaseFile
 from ..files.csv import CsvFile
 from ..files.excel import ExcelFile
-from ..utils.api_calls import ApiService, SimpleRequests
+from ..utils.api_calls import ApiService
 from ..utils.date_time import change_datetime_format, is_valid_period
 from ..utils.files import (create_directory_if_not_exists,
                            is_valid_directory_path)
@@ -35,11 +35,10 @@ class TaxFilingStatusTask(BaseTask):
         Initialize TaxFilingStatusTask with token.
         :param token: API token, optional
         """
-        self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
-        if self.simple_requests.headers.get("Authorization") is None:
-            self.simple_requests.set_token(self.settings.get("token"))
-        self.api_service = ApiService(token=self.settings.get("token"))
+        environment = self.settings.get('environment', '')
+        token = self.settings.get(environment, {}).get('token')
+        self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
 
     def get_params(self) -> None:
         """

@@ -4,16 +4,22 @@ import time
 
 import requests
 
-from .api_calls import ApiService, SimpleRequests
+from .api_calls import ApiService, Env
+from .terminal import COLOUR_RED, format_text
 
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'settings.json')
 
 
 def load_settings():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as f:
-            return json.load(f)
-    else:
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r') as f:
+                return json.load(f)
+        else:
+            return {}
+    except json.JSONDecodeError:
+        print(format_text("Error while loading the settings.", colour=COLOUR_RED, bold=True))
+        # Handle the error, for example by returning default settings
         return {}
 
 
@@ -22,8 +28,9 @@ def save_settings(settings):
         json.dump(settings, f, indent=4)
 
 
-def generate_token():
-    simple_requests = SimpleRequests.get_instance()
+def generate_token(environment: Env):
+    api_service = ApiService(environment.value)
+    simple_requests = api_service.requester
 
     MAX_ATTEMPTS = 3
 
