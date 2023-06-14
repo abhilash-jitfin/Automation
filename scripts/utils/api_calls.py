@@ -1,40 +1,45 @@
-import threading
+import enum
 
 import requests
 
 
-class SimpleRequests:
-    _instance = None
-    _lock = threading.Lock()
+class Env(enum.Enum):
+    PROD = 'prod'
+    QA = 'qa'
+    DEV = 'dev'
 
-    def __init__(self, token: str = None) -> None:
+
+class SimpleRequests:
+    _instances = {}
+
+    def __init__(self, base_url: str, token: str = None) -> None:
         """
         Initialize the SimpleRequests instance.
 
         Args:
+            base_url: Base URL for API calls.
             token: Authorization token (optional).
         """
-        self.base_url = ApiService.BASE_URL
+        self.base_url = base_url
         self.headers = {}
         if token:
             self.set_token(token)
 
     @classmethod
-    def get_instance(cls, token: str = None) -> "SimpleRequests":
+    def get_instance(cls, base_url: str, token: str = None) -> "SimpleRequests":
         """
-        Get the singleton instance of SimpleRequests.
+        Get the singleton instance of SimpleRequests for the specified base URL.
 
         Args:
+            base_url: Base URL for API calls.
             token: Authorization token (optional).
 
         Returns:
             The SimpleRequests instance.
         """
-        if not cls._instance:
-            with cls._lock:
-                if not cls._instance:
-                    cls._instance = cls(token)
-        return cls._instance
+        if base_url not in cls._instances:
+            cls._instances[base_url] = cls(base_url, token)
+        return cls._instances[base_url]
 
     def set_token(self, token: str) -> None:
         """
@@ -43,8 +48,7 @@ class SimpleRequests:
         Args:
             token: Authorization token.
         """
-        with self._lock:
-            self.headers['Authorization'] = token
+        self.headers['Authorization'] = token
 
     def get_url(self, endpoint: str) -> str:
         """
@@ -122,9 +126,15 @@ class SimpleRequests:
 
 
 class ApiService:
-    # BASE_URL = "http://127.0.0.1:8000/apis/"
-    # BASE_URL = "https://app.kyss.ai/apis/"
-    BASE_URL = "https://qa.appv2.kyss.ai/apis/"
+    BASE_URLS = {
+        Env.PROD.value: "https://app.kyss.ai/apis/",
+        Env.QA.value: "https://qa.appv2.kyss.ai/apis/",
+        Env.DEV.value: "http://127.0.0.1:8000/apis/"
+    }
+
+    PROD_BASE_URL = "https://app.kyss.ai/apis/"
+    QA_BASE_URL = "https://qa.appv2.kyss.ai/apis/"
+    DEV_BASE_URL = "http://127.0.0.1:8000/apis/"
     OTP_ENDPOINT = "accounts/signin/otp"
     VALIDATE_ENDPOINT = "accounts/signin/otp/validate"
     TAX_PAYER_ENDPOINT = "gst_lookup/taxpayer-info?gstin="
@@ -132,8 +142,9 @@ class ApiService:
     TAX_FILING_END_POINT = "internal/gst/filing?gstin={}&return_period={}"
     PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "accounts/pre-register/file/upload"
 
-    def __init__(self, token: str = None):
-        self.requester = SimpleRequests.get_instance(token)
+    def __init__(self, environment: str, token: str = None):
+        base_url = self.BASE_URLS[environment]
+        self.requester = SimpleRequests.get_instance(base_url, token)
 
     def call_otp_endpoint(self, data):
         """
