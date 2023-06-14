@@ -15,10 +15,11 @@ class PreRegisterFileProcessingTask(BaseTask):
     description = "Task to upload, process, and download a file for pre-registration"
 
     def __init__(self, token: Optional[str] = None):
-        self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
-        if self.simple_requests.headers.get('Authorization') is None:
-            self.simple_requests.set_token(self.settings.get('token'))
+        environment = self.settings.get('environment', '')
+        token = self.settings.get(environment, {}).get('token')
+        self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
+        self.simple_requests = self.api_service.requester
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
