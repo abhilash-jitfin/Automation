@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import pandas as pd
 from halo import Halo
@@ -61,16 +61,17 @@ class TaxFilingStatusTask(BaseTask):
                 "For which filing period do you want to fetch the data "
                 "(format is MM-YYYY. e.g 03-2023 for March 2023): "
             )
-            filing_period = get_clean_input(prompt_question)
+            return_period = get_clean_input(prompt_question)
             print()
-            if not is_valid_period(filing_period, "%m-%Y"):
+            if not is_valid_period(return_period, "%m-%Y"):
                 message = (
-                    f"'{filing_period}' has an invalid format. "
+                    f"'{return_period}' has an invalid format. "
                     "Please enter the filing period in the format 'MM-YYYY'.\n"
                 )
                 print(f"{format_text(message, colour=COLOUR_RED)}\n")
                 continue
-            self.filing_period = change_datetime_format(filing_period, "%m-%Y", "%b %Y")
+            self.return_period = return_period
+            self.return_period_desc = change_datetime_format(return_period, "%m-%Y", "%b %Y")
             break
 
     def execute(self) -> None:
@@ -162,18 +163,21 @@ class TaxFilingStatusTask(BaseTask):
         for index, gstin in enumerate(gstins, start=1):
             halo_message = format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE)
             with Halo(text=halo_message, spinner='dots') as spinner:
+                start_time = time.time()
                 tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
                 tax_payer_data = tax_payer_response.json()["data"]
                 try:
-                    tax_filing_response = self.api_service.call_tax_filing_status_endpoint(gstin)
+                    tax_filing_response = self.api_service.call_tax_filing_endpoint(gstin, self.return_period)
                 except HTTPError:
-                    filing_data = [{"return_period": self.filing_period, "gstr1": "-", "gstr3b": "-"}]
+                    filing_data = {'gstr1': '-', 'gstr3b': '-', 'return_period': self.return_period_desc}
                 else:
                     if tax_filing_response.json()["data"]:
-                        filing_data = tax_filing_response.json()["data"]["filing_data"]
+                        filing_data = tax_filing_response.json()["data"]
                 row_data = self.get_row_data(tax_payer_data, filing_data)
                 data.append(row_data)
-                spinner.succeed(f"{index}) Processed '{gstin}'")
+                end_time = time.time()
+                time_taken = (end_time - start_time)
+                spinner.succeed(f"{index}) Processed '{gstin}' in {time_taken:.2f} seconds.")
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
         print(f"Created the output file - {output_file_path}")
@@ -186,7 +190,6 @@ class TaxFilingStatusTask(BaseTask):
         :param tax_filing_data: Dictionary of tax filing data
         :return: A dictionary of relevant data for a single row
         """
-        filing_data = self.get_filing_data(tax_filing_data)
         return {
             "gstin": tax_payer_data["gstin"],
             "trade_name": tax_payer_data["trade_name"],
@@ -194,17 +197,7 @@ class TaxFilingStatusTask(BaseTask):
             "status": tax_payer_data["status"],
             "business_type": tax_payer_data["business_type"],
             "registration_date": tax_payer_data["registration_date"],
-            "return_period": filing_data["return_period"],
-            "gstr1": filing_data["gstr1"],
-            "gstr3b": filing_data["gstr3b"],
+            "return_period": tax_filing_data["return_period"],
+            "gstr1": tax_filing_data["gstr1"],
+            "gstr3b": tax_filing_data["gstr3b"],
         }
-
-    def get_filing_data(self, data: Dict[str, Union[str, List[Dict]]]) -> Dict[str, str]:
-        """
-        Retrieve filing data from the data dictionary.
-        :param data: Dictionary containing filing data
-        :return: A dictionary of filing data
-        """
-        return next((entry for entry in data if entry["return_period"] == self.filing_period), {
-            "return_period": self.filing_period, "gstr1": "-", "gstr3b": "-"
-        })

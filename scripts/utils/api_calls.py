@@ -129,6 +129,7 @@ class ApiService:
     VALIDATE_ENDPOINT = "accounts/signin/otp/validate"
     TAX_PAYER_ENDPOINT = "gst_lookup/taxpayer-info?gstin="
     TAX_FILING_STATUS_END_POINT = "supplier/gstr-filing-data?gstin="
+    TAX_FILING_END_POINT = "internal/gst/filing?gstin={}&return_period={}"
     PRE_REGISTER_FILE_UPLOAD_ENDPOINT = "accounts/pre-register/file/upload"
 
     def __init__(self, token: str = None):
@@ -184,3 +185,17 @@ class ApiService:
             JSON response as a dictionary.
         """
         return self.requester.get(f"{self.TAX_FILING_STATUS_END_POINT}{gstin}")
+
+    def call_tax_filing_endpoint(self, gstin: str, return_period: str) -> dict:
+        """
+        Call the tax filing endpoint with a given GSTIN and return period.
+
+        Args:
+            gstin: GSTIN to be used for the request.
+            return_period: return period for which the filing details should be fetched.
+
+        Returns:
+            JSON response as a dictionary.
+        """
+        URL = self.TAX_FILING_END_POINT.format(gstin, return_period)
+        return self.requester.get(URL)
