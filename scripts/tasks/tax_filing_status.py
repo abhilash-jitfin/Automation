@@ -1,5 +1,7 @@
 import os
+import shutil
 import time
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -93,6 +95,10 @@ class TaxFilingStatusTask(BaseTask):
         Process each file in the given list of files.
         :param files: List of file instances to be processed
         """
+        sample_file = files[0].file_path
+        parent_dir = Path(sample_file).parent
+        processed_dir_path = os.path.join(parent_dir, 'processed')
+        create_directory_if_not_exists(processed_dir_path)
         for input_file in files:
             print(input_file.file_path)
             start_time = time.time()
@@ -102,6 +108,12 @@ class TaxFilingStatusTask(BaseTask):
             print(
                 f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n"
             )
+            self.move_processed_file(processed_dir_path, input_file.file_path)
+
+    def move_processed_file(self, processed_dir_path: str, input_file_path: str) -> None:
+        basename = os.path.basename(input_file_path)
+        processed_file_path = os.path.join(processed_dir_path, basename)
+        shutil.move(input_file_path, processed_file_path)
 
     def get_input_files(self) -> List[BaseFile]:
         """
