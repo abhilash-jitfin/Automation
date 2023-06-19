@@ -82,7 +82,10 @@ class TaxFilingStatusTask(BaseTask):
         """
         self.prepare_output_directory()
         files = self.get_input_files()
-        self.process_files(files)
+        try:
+            self.process_files(files)
+        except Exception:
+            self.create_failed_gstin_file()
 
     def prepare_output_directory(self) -> None:
         """
