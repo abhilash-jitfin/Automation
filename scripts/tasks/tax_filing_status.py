@@ -41,6 +41,7 @@ class TaxFilingStatusTask(BaseTask):
         environment = self.settings.get('environment', '')
         token = self.settings.get(environment, {}).get('token')
         self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
+        self.failed_gstins = []
 
     def get_params(self) -> None:
         """
@@ -103,6 +104,7 @@ class TaxFilingStatusTask(BaseTask):
             print(input_file.file_path)
             start_time = time.time()
             self.generate_output_file(input_file)
+            self.create_failed_gstin_file()
             end_time = time.time()
             time_taken = ((end_time - start_time)/60)
             print(
@@ -127,8 +129,9 @@ class TaxFilingStatusTask(BaseTask):
             return files
 
         supported_extensions = self.FILE_CLASSES.keys()
-        for file in os.listdir(self.directory_path):
-            filename = file
+        for filename in os.listdir(self.directory_path):
+            if filename.startswith('~') or filename.startswith('.~'):
+                continue
             extension = filename.split(".")[-1].upper()
             if extension not in supported_extensions:
                 print(format_text(f'The file `{filename}` is not a valid input file.\n', colour=COLOUR_RED))
@@ -175,12 +178,25 @@ class TaxFilingStatusTask(BaseTask):
             halo_message = format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE)
             with Halo(text=halo_message, spinner='dots') as spinner:
                 start_time = time.time()
-                tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
-                tax_payer_data = tax_payer_response.json()["data"]
+                try:
+                    tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
+                except HTTPError:
+                    self.failed_gstins.append(gstin)
+                    end_time = time.time()
+                    time_taken = (end_time - start_time)
+                    spinner.succeed(f"{index}) HTTP Error for '{gstin}' : time taken {time_taken:.2f} seconds.")
+                    continue
+                else:
+                    tax_payer_data = tax_payer_response.json()["data"]
                 try:
                     tax_filing_response = self.api_service.call_tax_filing_endpoint(gstin, self.return_period)
                 except HTTPError:
+                    self.failed_gstins.append(gstin)
                     filing_data = {'gstr1': '-', 'gstr3b': '-', 'return_period': self.return_period_desc}
+                    end_time = time.time()
+                    time_taken = (end_time - start_time)
+                    spinner.succeed(f"{index}) HTTP Error for '{gstin}' : time taken {time_taken:.2f} seconds.")
+                    continue
                 else:
                     if tax_filing_response.json()["data"]:
                         filing_data = tax_filing_response.json()["data"]
@@ -193,6 +209,12 @@ class TaxFilingStatusTask(BaseTask):
         df.to_excel(output_file_path, index=False)
         print(f"Created the output file - {output_file_path}")
         print()
+
+    def create_failed_gstin_file(self):
+        df = pd.DataFrame(self.failed_gstins, columns=['gstin'])
+        failed_gstins_path = os.path.join(self.directory_path, "failed_gstins.xlsx")
+        df.to_excel(failed_gstins_path, index=False)
+        print(f"Created the failed gstins file - {failed_gstins_path}\n")
 
     def get_row_data(self, tax_payer_data: Dict[str, str], tax_filing_data: Dict[str, str]) -> Dict[str, str]:
         """

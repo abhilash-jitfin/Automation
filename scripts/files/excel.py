@@ -28,6 +28,15 @@ class ExcelFile(BaseFile):
             )
 
     def read(self, sheet: Optional[str] = None, columns_to_read: Optional[List[str]] = None) -> pd.DataFrame:
+        _, extension = os.path.splitext(self.file_path)
+
+        if extension.lower() == '.xlsx':
+            engine = 'openpyxl'
+        elif extension.lower() == '.xls':
+            engine = 'xlrd'
+        else:
+            raise ValueError(f'Unsupported file extension: {extension}')
+
         df = pd.read_excel(self.file_path, sheet_name=sheet if sheet is not None else 0,
-                           usecols=columns_to_read)
+                           usecols=columns_to_read, engine=engine)
         return df
