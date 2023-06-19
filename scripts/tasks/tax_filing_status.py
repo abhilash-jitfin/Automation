@@ -166,49 +166,47 @@ class TaxFilingStatusTask(BaseTask):
         base, extension = os.path.splitext(base_name)
         return os.path.join(self.directory_path, "output", f"{base}_output.xlsx")
 
-    def generate_output_file(self, file: BaseFile) -> None:
-        """
-        Generate output file containing tax filing data for GSTINs.
-        :param file: Input file containing GSTINs
-        """
+    def append_failed_gstin_and_log(self, index, gstin, start_time, spinner, message):
+        self.failed_gstins.append(gstin)
+        end_time = time.time()
+        time_taken = end_time - start_time
+        spinner.succeed(f"{index}) {message} for '{gstin}' : time taken {time_taken:.2f} seconds.")
+
+    def generate_output_file(self, file):
         gstins = self.get_gstins(file)
         output_file_path = self.generate_output_file_path(file.file_path)
         data = []
+
         for index, gstin in enumerate(gstins, start=1):
-            halo_message = format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE)
-            with Halo(text=halo_message, spinner='dots') as spinner:
+            with Halo(text=format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE), spinner='dots') as spinner:
                 start_time = time.time()
+
                 try:
                     tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
-                except HTTPError:
-                    self.failed_gstins.append(gstin)
-                    end_time = time.time()
-                    time_taken = (end_time - start_time)
-                    spinner.succeed(f"{index}) HTTP Error for '{gstin}' : time taken {time_taken:.2f} seconds.")
-                    continue
-                else:
                     tax_payer_data = tax_payer_response.json()["data"]
+                except HTTPError:
+                    self.append_failed_gstin_and_log(index, gstin, start_time, spinner, "HTTP Error")
+                    continue
+
                 try:
                     tax_filing_response = self.api_service.call_tax_filing_endpoint(gstin, self.return_period)
+                    tax_filing_data = tax_filing_response.json()["data"]
                 except HTTPError:
-                    self.failed_gstins.append(gstin)
-                    filing_data = {'gstr1': '-', 'gstr3b': '-', 'return_period': self.return_period_desc}
-                    end_time = time.time()
-                    time_taken = (end_time - start_time)
-                    spinner.succeed(f"{index}) HTTP Error for '{gstin}' : time taken {time_taken:.2f} seconds.")
+                    self.append_failed_gstin_and_log(index, gstin, start_time, spinner, "HTTP Error")
                     continue
-                else:
-                    if tax_filing_response.json()["data"]:
-                        filing_data = tax_filing_response.json()["data"]
+
+                filing_data = tax_filing_data if tax_filing_data else {'gstr1': '-', 'gstr3b': '-', 'return_period': self.return_period_desc}
+
                 row_data = self.get_row_data(tax_payer_data, filing_data)
                 data.append(row_data)
+
                 end_time = time.time()
-                time_taken = (end_time - start_time)
+                time_taken = end_time - start_time
                 spinner.succeed(f"{index}) Processed '{gstin}' in {time_taken:.2f} seconds.")
+
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
         print(f"Created the output file - {output_file_path}")
-        print()
 
     def create_failed_gstin_file(self):
         df = pd.DataFrame(self.failed_gstins, columns=['gstin'])
