@@ -104,13 +104,13 @@ class TaxFilingStatusTask(BaseTask):
             print(input_file.file_path)
             start_time = time.time()
             self.generate_output_file(input_file)
-            self.create_failed_gstin_file()
             end_time = time.time()
             time_taken = ((end_time - start_time)/60)
             print(
                 f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n"
             )
             self.move_processed_file(processed_dir_path, input_file.file_path)
+        self.create_failed_gstin_file()
 
     def move_processed_file(self, processed_dir_path: str, input_file_path: str) -> None:
         basename = os.path.basename(input_file_path)
