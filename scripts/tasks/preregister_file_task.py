@@ -59,6 +59,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         """Save a DataFrame to an Excel file."""
         df['phone_number'] = df['phone_number'].astype('string')
         df['phone_number'] = df['phone_number'].apply(self.update_phone_number)
+        df['phone_number'] = df['phone_number'].astype('string')
         df.to_excel(file_path, index=False)
 
     def update_phone_number(self, phone_number: str) -> str:
