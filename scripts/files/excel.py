@@ -22,17 +22,25 @@ class ExcelFile(BaseFile):
             raise ValueError("chunk_size should be greater than 0")
 
         output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
 
         workbook = load_workbook(self.file_path)
         sheet = workbook.active
         total_rows = sheet.max_row
         headings = [cell.value for cell in sheet[1]]
-
+        base_name_without_ext = os.path.splitext(os.path.basename(self.file_path))[0]
+        print("\n")
         for i in range(2, total_rows, chunk_size):
-            data = sheet[i : i + chunk_size]
+            data = sheet[i : i + chunk_size] if i == 2 else sheet[i + 1 : i + chunk_size]
             df = pd.DataFrame(([cell.value for cell in row] for row in data), columns=headings)
-            df.to_excel(output_dir / f"chunk{i // chunk_size + 1}.xlsx", index=False)
+            filepath = output_dir / f"{base_name_without_ext}_chunk_{i // chunk_size + 1}.xlsx"
+            df.to_excel(filepath, index=False)
+            print(filepath)
+            # first_row_data = sheet[i+1]
+            # first_row_values = [cell.value for cell in first_row_data]
+            # print(f"First row content of file chunk_{i // chunk_size + 1}.xlsx: {first_row_values}\n")
+            # last_row_data = sheet[i + chunk_size]
+            # last_row_values = [cell.value for cell in last_row_data]
+            # print(f"Last row content of file chunk_{i // chunk_size + 1}.xlsx: {last_row_values}")
 
     def read(self, sheet: Optional[str] = None, columns_to_read: Optional[List[str]] = None) -> pd.DataFrame:
         """

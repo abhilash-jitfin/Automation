@@ -50,10 +50,12 @@ class FileSplitTask(BaseTask):
 
     def execute(self) -> None:
         """Execute the task."""
-        spinner = Halo(text="Splitting File", spinner="dots")
-        spinner.start()
+        # spinner = Halo(text="Splitting File", spinner="dots")
+        # spinner.start()
         try:
             self.file.split(self.output_dir, self.chunk_size)
         except Exception as e:
-            spinner.fail(f"Failed to split the file. Error: {e}")
-        spinner.succeed("File splitting completed.")
+            print(f"Failed to split the file. Error: {e}")
+            # spinner.fail(f"Failed to split the file. Error: {e}")
+        # spinner.succeed("File splitting completed.")
+        print("\nFile splitting completed.")
