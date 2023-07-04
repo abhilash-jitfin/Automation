@@ -173,7 +173,7 @@ class TaxFilingStatusTask(BaseTask):
         self.failed_gstins.append(gstin)
         end_time = time.time()
         time_taken = end_time - start_time
-        spinner.succeed(f"{index}) {message} for '{gstin}' : time taken {time_taken:.2f} seconds.")
+        spinner.fail(f"{index}) {message} for '{gstin}' : time taken {time_taken:.2f} seconds.")
 
     def generate_output_file(self, file):
         gstins = self.get_gstins(file)
@@ -235,3 +235,9 @@ class TaxFilingStatusTask(BaseTask):
             "gstr1": tax_filing_data["gstr1"],
             "gstr3b": tax_filing_data["gstr3b"],
         }
+
+
+
+
+class Test:
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"

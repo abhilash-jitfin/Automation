@@ -5,7 +5,8 @@ import pandas as pd
 import requests
 from halo import Halo
 
-from ..utils.api_calls import ApiService, SimpleRequests
+from ..files.excel import ExcelFile
+from ..utils.api_calls import ApiService
 from ..utils.files import create_directory_if_not_exists
 from ..utils.settings import load_settings
 from .abstract_task import BaseTask
@@ -60,7 +61,10 @@ class PreRegisterFileProcessingTask(BaseTask):
         df['phone_number'] = df['phone_number'].astype('string')
         df['phone_number'] = df['phone_number'].apply(self.update_phone_number)
         df['phone_number'] = df['phone_number'].astype('string')
-        df.to_excel(file_path, index=False)
+
+        # Use ExcelFile class to save DataFrame to Excel
+        excel_file = ExcelFile(file_path)
+        excel_file.save(df)
 
     def update_phone_number(self, phone_number: str) -> str:
         """Ensure phone number starts with '+91'."""
@@ -68,11 +72,12 @@ class PreRegisterFileProcessingTask(BaseTask):
             phone_number = '+' + phone_number
         elif not phone_number.startswith('+91') and len(phone_number) == 10:
             phone_number = '+91' + phone_number
-
         return phone_number
 
     def clean_file(self):
-        df = pd.read_excel(self.file_path)
+        # Using ExcelFile class to read the Excel file
+        excel_file = ExcelFile(self.file_path)
+        df = excel_file.read()  # you can also specify a sheet name and columns to read
 
         gstin_duplicates_df = df[df.duplicated(subset=['gstin'], keep=False)]
         gstin_duplicates_df = gstin_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
