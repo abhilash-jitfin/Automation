@@ -11,7 +11,7 @@ class Env(Enum):
 
 class Config:
     _instance = None
-    SETTINGS_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'settings.json')
+    SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "settings.json")
 
     def __new__(cls):
         if cls._instance is None:
@@ -21,25 +21,25 @@ class Config:
 
     def load_settings(self):
         if os.path.exists(self.SETTINGS_FILE):
-            with open(self.SETTINGS_FILE, 'r') as f:
+            with open(self.SETTINGS_FILE, "r") as f:
                 self.settings = json.load(f)
         else:
             self.settings = {}
 
     def save_settings(self):
-        with open(self.SETTINGS_FILE, 'w') as f:
+        with open(self.SETTINGS_FILE, "w") as f:
             json.dump(self.settings, f, indent=4)
 
     def set_environment(self, env):
-        self.settings['environment'] = env.value
+        self.settings["environment"] = env.value
         self.save_settings()
 
     def get_environment(self):
-        return self.settings.get('environment', Env.PROD.value)
+        return self.settings.get("environment", Env.PROD.value)
 
     def set_token(self, token):
-        self.settings['token'] = token
+        self.settings["token"] = token
         self.save_settings()
 
     def get_token(self):
-        return self.settings.get('token')
+        return self.settings.get("token")

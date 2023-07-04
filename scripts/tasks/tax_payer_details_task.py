@@ -14,31 +14,31 @@ class TaxPayerDetailsTask(BaseTask):
     def __init__(self, token=None):
         self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
-        if self.simple_requests.headers.get('Authorization') is None:
-            self.simple_requests.set_token(self.settings.get('token'))
+        if self.simple_requests.headers.get("Authorization") is None:
+            self.simple_requests.set_token(self.settings.get("token"))
         self.file_path = None
         self.output_fields = [
-            'date_of_cancellation',
-            'last_updated_date',
-            'registration_date',
-            'state_jurisdiction_code',
-            'business_type',
-            'legal_name',
-            'state_jurisdiction',
-            'addresses',
-            'gstin',
-            'nature_of_business_activities',
-            'constitution_of_business',
-            'principal_place_of_business',
-            'commissionerate_code',
-            'trade_name',
-            'status',
-            'is_gstin_inactive',
-            'commissionerate',
-            'tax_payer_updated_at',
-            'registration_date_formatted',
-            'primary_address',
-            'other_addresses'
+            "date_of_cancellation",
+            "last_updated_date",
+            "registration_date",
+            "state_jurisdiction_code",
+            "business_type",
+            "legal_name",
+            "state_jurisdiction",
+            "addresses",
+            "gstin",
+            "nature_of_business_activities",
+            "constitution_of_business",
+            "principal_place_of_business",
+            "commissionerate_code",
+            "trade_name",
+            "status",
+            "is_gstin_inactive",
+            "commissionerate",
+            "tax_payer_updated_at",
+            "registration_date_formatted",
+            "primary_address",
+            "other_addresses",
         ]
 
     def get_params(self) -> None:
@@ -92,7 +92,7 @@ class TaxPayerDetailsTask(BaseTask):
             try:
                 print(f"{i}) {gstin}\n")
                 response = self.simple_requests.get(f"{ApiService.TAX_PAYER_ENDPOINT}{gstin}")
-                if response.json().get('success'):
+                if response.json().get("success"):
                     data = response.json().get("data", {})
                     if data:
                         taxpayer_details[gstin] = self.extract_taxpayer_details(data)
@@ -114,27 +114,27 @@ class TaxPayerDetailsTask(BaseTask):
         details = {}
 
         # Extract the required details from the 'data' dictionary
-        details['date_of_cancellation'] = data.get('date_of_cancellation')
-        details['last_updated_date'] = data.get('last_updated_date')
-        details['registration_date'] = data.get('registration_date')
-        details['state_jurisdiction_code'] = data.get('state_jurisdiction_code')
-        details['business_type'] = data.get('business_type')
-        details['legal_name'] = data.get('legal_name')
-        details['state_jurisdiction'] = data.get('state_jurisdiction')
-        details['addresses'] = data.get('addresses')
-        details['gstin'] = data.get('gstin')
-        details['nature_of_business_activities'] = data.get('nature_of_business_activities')
-        details['constitution_of_business'] = data.get('constitution_of_business')
-        details['principal_place_of_business'] = data.get('principal_place_of_business')
-        details['commissionerate_code'] = data.get('commissionerate_code')
-        details['trade_name'] = data.get('trade_name')
-        details['status'] = data.get('status')
-        details['is_gstin_inactive'] = data.get('is_gstin_inactive')
-        details['commissionerate'] = data.get('commissionerate')
-        details['tax_payer_updated_at'] = data.get('tax_payer_updated_at')
-        details['registration_date_formatted'] = data.get('registration_date_formatted')
-        details['primary_address'] = data.get('primary_address')
-        details['other_addresses'] = data.get('other_addresses')
+        details["date_of_cancellation"] = data.get("date_of_cancellation")
+        details["last_updated_date"] = data.get("last_updated_date")
+        details["registration_date"] = data.get("registration_date")
+        details["state_jurisdiction_code"] = data.get("state_jurisdiction_code")
+        details["business_type"] = data.get("business_type")
+        details["legal_name"] = data.get("legal_name")
+        details["state_jurisdiction"] = data.get("state_jurisdiction")
+        details["addresses"] = data.get("addresses")
+        details["gstin"] = data.get("gstin")
+        details["nature_of_business_activities"] = data.get("nature_of_business_activities")
+        details["constitution_of_business"] = data.get("constitution_of_business")
+        details["principal_place_of_business"] = data.get("principal_place_of_business")
+        details["commissionerate_code"] = data.get("commissionerate_code")
+        details["trade_name"] = data.get("trade_name")
+        details["status"] = data.get("status")
+        details["is_gstin_inactive"] = data.get("is_gstin_inactive")
+        details["commissionerate"] = data.get("commissionerate")
+        details["tax_payer_updated_at"] = data.get("tax_payer_updated_at")
+        details["registration_date_formatted"] = data.get("registration_date_formatted")
+        details["primary_address"] = data.get("primary_address")
+        details["other_addresses"] = data.get("other_addresses")
 
         return details
 
@@ -151,7 +151,7 @@ class TaxPayerDetailsTask(BaseTask):
         """Write taxpayer details to the output file."""
         try:
             output_file = self.file_path
-            df = pd.DataFrame.from_dict(taxpayer_details, orient='index', columns=self.output_fields)
+            df = pd.DataFrame.from_dict(taxpayer_details, orient="index", columns=self.output_fields)
             df.to_excel(output_file, index=False)
 
             print("Taxpayer details written to the output file:", output_file)

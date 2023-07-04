@@ -13,9 +13,9 @@ from scripts.utils.terminal import COLOUR_ORANGE, format_text, get_clean_input
 
 def load_tasks():
     task_modules = {}
-    task_module_names = [name for _, name, _ in pkgutil.iter_modules(['scripts/tasks'])]
+    task_module_names = [name for _, name, _ in pkgutil.iter_modules(["scripts/tasks"])]
     for modname in task_module_names:
-        module = importlib.import_module(f'scripts.tasks.{modname}')
+        module = importlib.import_module(f"scripts.tasks.{modname}")
         for name, obj in inspect.getmembers(module):
             if inspect.isclass(obj) and issubclass(obj, BaseTask) and obj != BaseTask:
                 task_modules[name] = obj
@@ -54,9 +54,9 @@ def run_task(task_modules, choice):
 
 def print_heading():
     space = " "
-    heading = text2art(f'{space*20} Automation Tasks {space*20}')
+    heading = text2art(f"{space*20} Automation Tasks {space*20}")
     fromated_heading = format_text(heading, colour=COLOUR_ORANGE, bold=True)
-    print('\n')
+    print("\n")
     print(fromated_heading)
 
 
@@ -71,7 +71,7 @@ def get_environment():
             print("\n")
             choice = int(input(f"Enter the number corresponding to the environment (1-{len(envs)}): "))
             if 1 <= choice <= len(envs):
-                return envs[choice-1]
+                return envs[choice - 1]
             else:
                 print("Invalid choice. Please enter a valid number.\n")
         except ValueError:
@@ -85,16 +85,16 @@ def main():
 
     # Always ask the user to select an environment
     env = get_environment()
-    settings['environment'] = env.value
+    settings["environment"] = env.value
 
     # Save the settings
     save_settings(settings)
 
     # Generate token if not already present in settings
-    if not settings.get(env.value, {}).get('token'):
+    if not settings.get(env.value, {}).get("token"):
         # Assuming you have defined generate_token elsewhere
         token = generate_token(env)
-        settings.setdefault(env.value, {})['token'] = token
+        settings.setdefault(env.value, {})["token"] = token
         save_settings(settings)
 
     while True:

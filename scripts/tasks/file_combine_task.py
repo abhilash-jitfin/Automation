@@ -15,8 +15,8 @@ class FileCombineTask(BaseTask):
     description = "Combine files in a directory into a single file"
 
     FILE_CLASSES = {
-        'csv': CsvFile,
-        'xlsx': ExcelFile
+        "csv": CsvFile,
+        "xlsx": ExcelFile
         # Add other file types here
     }
 
@@ -62,7 +62,7 @@ class FileCombineTask(BaseTask):
         """Combine the files into a single DataFrame."""
         dfs = []
         for file_path in file_paths:
-            extension = file_path.split('.')[-1].lower()
+            extension = file_path.split(".")[-1].lower()
             if extension not in self.FILE_CLASSES:
                 continue
             file = self.FILE_CLASSES[extension](file_path)

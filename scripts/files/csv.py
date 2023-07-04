@@ -16,7 +16,7 @@ class CsvFile(BaseFile):
 
         chunk_number = 1
         for i, chunk in enumerate(pd.read_csv(self.file_path, chunksize=chunk_size)):
-            base_name = f'chunk{chunk_number}.csv'
+            base_name = f"chunk{chunk_number}.csv"
             if i == 0:
                 chunk.to_csv(os.path.join(output_dir, base_name), index=False)
                 column_names = chunk.columns  # Extract column headings from the first chunk
@@ -25,10 +25,10 @@ class CsvFile(BaseFile):
 
             # Append column headings to each split file
             if i > 0:
-                with open(os.path.join(output_dir, base_name), 'r+') as file:
+                with open(os.path.join(output_dir, base_name), "r+") as file:
                     content = file.read()
                     file.seek(0, 0)
-                    file.write(','.join(column_names) + '\n' + content)
+                    file.write(",".join(column_names) + "\n" + content)
 
             chunk_number += 1
 

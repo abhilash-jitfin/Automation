@@ -3,14 +3,14 @@ UNDERLINE = "\033[4m"
 BLINK = "\033[5m"
 RESET = "\033[0m"
 
-COLOUR_RED = 'red'
-COLOUR_BLUE = 'blue'
-COLOUR_CYAN = 'cyan'
-COLOUR_GREEN = 'green'
-COLOUR_WHITE = 'white'
-COLOUR_YELLOW = 'yellow'
-COLOUR_ORANGE = 'orange'
-COLOUR_MAGENTA = 'magenta'
+COLOUR_RED = "red"
+COLOUR_BLUE = "blue"
+COLOUR_CYAN = "cyan"
+COLOUR_GREEN = "green"
+COLOUR_WHITE = "white"
+COLOUR_YELLOW = "yellow"
+COLOUR_ORANGE = "orange"
+COLOUR_MAGENTA = "magenta"
 
 COLOURS = {
     COLOUR_RED: "\033[31m",
@@ -24,8 +24,9 @@ COLOURS = {
 }
 
 
-def format_text(input: str, colour: str = None, bold: bool = False, underline: bool = False,
-                blink: bool = False) -> str:
+def format_text(
+    input: str, colour: str = None, bold: bool = False, underline: bool = False, blink: bool = False
+) -> str:
     colour_code = COLOURS.get(colour, "")
     bold_code = BOLD if bold else ""
     underline_code = UNDERLINE if underline else ""

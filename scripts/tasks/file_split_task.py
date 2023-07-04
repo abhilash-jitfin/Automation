@@ -12,8 +12,8 @@ class FileSplitTask(BaseTask):
     description = "split a file into smaller chunks"
 
     FILE_CLASSES = {
-        'csv': CsvFile,
-        'xlsx': ExcelFile
+        "csv": CsvFile,
+        "xlsx": ExcelFile
         # Add other file types here
     }
 
@@ -25,7 +25,7 @@ class FileSplitTask(BaseTask):
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
         file_path = input("Enter the file path: ")
-        extension = file_path.split('.')[-1].lower()
+        extension = file_path.split(".")[-1].lower()
 
         if extension not in self.FILE_CLASSES:
             raise ValueError(f"Unsupported file type: {extension}")

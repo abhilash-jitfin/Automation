@@ -17,8 +17,8 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def __init__(self, token: Optional[str] = None):
         self.settings = load_settings()
-        environment = self.settings.get('environment', '')
-        token = self.settings.get(environment, {}).get('token')
+        environment = self.settings.get("environment", "")
+        token = self.settings.get(environment, {}).get("token")
         self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
         self.simple_requests = self.api_service.requester
 
@@ -39,7 +39,7 @@ class PreRegisterFileProcessingTask(BaseTask):
         files = [
             (df, self.generate_file_name(input_file_name, "unique")),
             (gstin_dups_df, self.generate_file_name(input_file_name, "gstin_dups")),
-            (phone_number_dups_df, self.generate_file_name(input_file_name, "phone_number_dups"))
+            (phone_number_dups_df, self.generate_file_name(input_file_name, "phone_number_dups")),
         ]
         for df, file_name in files:
             output_file = os.path.join(output_dir, file_name)
@@ -58,9 +58,9 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def save_df_to_excel(self, df: pd.DataFrame, file_path: str) -> None:
         """Save a DataFrame to an Excel file."""
-        df['phone_number'] = df['phone_number'].astype('string')
-        df['phone_number'] = df['phone_number'].apply(self.update_phone_number)
-        df['phone_number'] = df['phone_number'].astype('string')
+        df["phone_number"] = df["phone_number"].astype("string")
+        df["phone_number"] = df["phone_number"].apply(self.update_phone_number)
+        df["phone_number"] = df["phone_number"].astype("string")
 
         # Use ExcelFile class to save DataFrame to Excel
         excel_file = ExcelFile(file_path)
@@ -68,10 +68,10 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def update_phone_number(self, phone_number: str) -> str:
         """Ensure phone number starts with '+91'."""
-        if phone_number.startswith('91') and len(phone_number) == 12:
-            phone_number = '+' + phone_number
-        elif not phone_number.startswith('+91') and len(phone_number) == 10:
-            phone_number = '+91' + phone_number
+        if phone_number.startswith("91") and len(phone_number) == 12:
+            phone_number = "+" + phone_number
+        elif not phone_number.startswith("+91") and len(phone_number) == 10:
+            phone_number = "+91" + phone_number
         return phone_number
 
     def clean_file(self):
@@ -79,31 +79,30 @@ class PreRegisterFileProcessingTask(BaseTask):
         excel_file = ExcelFile(self.file_path)
         df = excel_file.read()  # you can also specify a sheet name and columns to read
 
-        gstin_duplicates_df = df[df.duplicated(subset=['gstin'], keep=False)]
-        gstin_duplicates_df = gstin_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
+        gstin_duplicates_df = df[df.duplicated(subset=["gstin"], keep=False)]
+        gstin_duplicates_df = gstin_duplicates_df[["gstin", "phone_number", "name", "email"]]
 
-        phone_number_duplicates_df = df[df.duplicated(subset=['phone_number'], keep=False)]
-        phone_number_duplicates_df = phone_number_duplicates_df[['gstin', 'phone_number', 'name', 'email']]
+        phone_number_duplicates_df = df[df.duplicated(subset=["phone_number"], keep=False)]
+        phone_number_duplicates_df = phone_number_duplicates_df[["gstin", "phone_number", "name", "email"]]
 
-        gstin_dups_df = self.create_duplicate_dfs(gstin_duplicates_df, 'gstin')
-        phone_number_dups_df = self.create_duplicate_dfs(phone_number_duplicates_df, 'phone_number')
+        gstin_dups_df = self.create_duplicate_dfs(gstin_duplicates_df, "gstin")
+        phone_number_dups_df = self.create_duplicate_dfs(phone_number_duplicates_df, "phone_number")
 
-        df = df.drop_duplicates(subset=['gstin'], keep=False)
-        df = df.drop_duplicates(subset=['phone_number'], keep=False)
+        df = df.drop_duplicates(subset=["gstin"], keep=False)
+        df = df.drop_duplicates(subset=["phone_number"], keep=False)
         return df, gstin_dups_df, phone_number_dups_df
 
     def create_duplicate_dfs(self, df, column):
         df = df.sort_values(by=column)
         previous = None
-        result_df = pd.DataFrame(columns=['gstin', 'name', 'email', 'phone_number'])
+        result_df = pd.DataFrame(columns=["gstin", "name", "email", "phone_number"])
         rows = []  # Initialize an empty list for rows
 
         for index, row in df.iterrows():
             if previous is not None and previous[column] != row[column]:
-                rows.append(pd.DataFrame({
-                        'gstin': ['---'], 'name': ['---'], 'email': ['---'], 'phone_number': ['---']
-                    }
-                ))
+                rows.append(
+                    pd.DataFrame({"gstin": ["---"], "name": ["---"], "email": ["---"], "phone_number": ["---"]})
+                )
             rows.append(row.to_frame().T)
             previous = row
 
@@ -125,7 +124,7 @@ class PreRegisterFileProcessingTask(BaseTask):
                 )
             file_id = None
             try:
-                file_id = int(response.json().get('data', '')[-2:])
+                file_id = int(response.json().get("data", "")[-2:])
             except ValueError:
                 print("Failed to upload the file.")
                 return
@@ -161,9 +160,7 @@ class PreRegisterFileProcessingTask(BaseTask):
             response = self.simple_requests.get(f"accounts/pre-register/file/{file_id}/result", stream=True)
             if response:
                 split = os.path.splitext(self.file_path)
-                output_file_path = os.path.join(
-                    os.path.dirname(self.file_path), f"{split[0]}_output{split[1]}"
-                )
+                output_file_path = os.path.join(os.path.dirname(self.file_path), f"{split[0]}_output{split[1]}")
                 with open(output_file_path, "wb") as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         file.write(chunk)

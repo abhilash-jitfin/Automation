@@ -7,13 +7,13 @@ import requests
 from .api_calls import ApiService, Env
 from .terminal import COLOUR_RED, format_text
 
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'settings.json')
+SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "settings.json")
 
 
 def load_settings():
     try:
         if os.path.exists(SETTINGS_FILE):
-            with open(SETTINGS_FILE, 'r') as f:
+            with open(SETTINGS_FILE, "r") as f:
                 return json.load(f)
         else:
             return {}
@@ -24,7 +24,7 @@ def load_settings():
 
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, 'w') as f:
+    with open(SETTINGS_FILE, "w") as f:
         json.dump(settings, f, indent=4)
 
 

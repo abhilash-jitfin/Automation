@@ -14,11 +14,9 @@ from ..files.csv import CsvFile
 from ..files.excel import ExcelFile
 from ..utils.api_calls import ApiService
 from ..utils.date_time import change_datetime_format, is_valid_period
-from ..utils.files import (create_directory_if_not_exists,
-                           is_valid_directory_path)
+from ..utils.files import create_directory_if_not_exists, is_valid_directory_path
 from ..utils.settings import load_settings
-from ..utils.terminal import (COLOUR_ORANGE, COLOUR_RED, format_text,
-                              get_clean_input)
+from ..utils.terminal import COLOUR_ORANGE, COLOUR_RED, format_text, get_clean_input
 from .abstract_task import BaseTask
 
 
@@ -26,11 +24,9 @@ class TaxFilingStatusTask(BaseTask):
     """
     A task to retrieve tax filing details for multiple GSTINs from a file.
     """
+
     description = "Task to retrieve tax filing details for multiple GSTINs from a file."
-    FILE_CLASSES = {
-        "CSV": CsvFile,
-        "XLSX": ExcelFile
-    }
+    FILE_CLASSES = {"CSV": CsvFile, "XLSX": ExcelFile}
 
     def __init__(self, token: Optional[str] = None):
         """
@@ -38,8 +34,8 @@ class TaxFilingStatusTask(BaseTask):
         :param token: API token, optional
         """
         self.settings = load_settings()
-        environment = self.settings.get('environment', '')
-        token = self.settings.get(environment, {}).get('token')
+        environment = self.settings.get("environment", "")
+        token = self.settings.get(environment, {}).get("token")
         self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
         self.failed_gstins = []
 
@@ -101,17 +97,15 @@ class TaxFilingStatusTask(BaseTask):
         """
         sample_file = files[0].file_path
         parent_dir = Path(sample_file).parent
-        processed_dir_path = os.path.join(parent_dir, 'processed')
+        processed_dir_path = os.path.join(parent_dir, "processed")
         create_directory_if_not_exists(processed_dir_path)
         for input_file in files:
             print(input_file.file_path)
             start_time = time.time()
             self.generate_output_file(input_file)
             end_time = time.time()
-            time_taken = ((end_time - start_time)/60)
-            print(
-                f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n"
-            )
+            time_taken = (end_time - start_time) / 60
+            print(f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n")
             self.move_processed_file(processed_dir_path, input_file.file_path)
         self.create_failed_gstin_file()
 
@@ -133,11 +127,11 @@ class TaxFilingStatusTask(BaseTask):
 
         supported_extensions = self.FILE_CLASSES.keys()
         for filename in os.listdir(self.directory_path):
-            if filename.startswith('~') or filename.startswith('.~'):
+            if filename.startswith("~") or filename.startswith(".~"):
                 continue
             extension = filename.split(".")[-1].upper()
             if extension not in supported_extensions:
-                print(format_text(f'The file `{filename}` is not a valid input file.\n', colour=COLOUR_RED))
+                print(format_text(f"The file `{filename}` is not a valid input file.\n", colour=COLOUR_RED))
                 continue
             file_path = os.path.join(self.directory_path, filename)
             if not os.path.isfile(file_path):
@@ -181,7 +175,9 @@ class TaxFilingStatusTask(BaseTask):
         data = []
 
         for index, gstin in enumerate(gstins, start=1):
-            with Halo(text=format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE), spinner='dots') as spinner:
+            with Halo(
+                text=format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE), spinner="dots"
+            ) as spinner:
                 start_time = time.time()
 
                 try:
@@ -198,7 +194,11 @@ class TaxFilingStatusTask(BaseTask):
                     self.append_failed_gstin_and_log(index, gstin, start_time, spinner, "HTTP Error")
                     continue
 
-                filing_data = tax_filing_data if tax_filing_data else {'gstr1': '-', 'gstr3b': '-', 'return_period': self.return_period_desc}
+                filing_data = (
+                    tax_filing_data
+                    if tax_filing_data
+                    else {"gstr1": "-", "gstr3b": "-", "return_period": self.return_period_desc}
+                )
 
                 row_data = self.get_row_data(tax_payer_data, filing_data)
                 data.append(row_data)
@@ -212,7 +212,7 @@ class TaxFilingStatusTask(BaseTask):
         print(f"Created the output file - {output_file_path}")
 
     def create_failed_gstin_file(self):
-        df = pd.DataFrame(self.failed_gstins, columns=['gstin'])
+        df = pd.DataFrame(self.failed_gstins, columns=["gstin"])
         failed_gstins_path = os.path.join(self.directory_path, "failed_gstins.xlsx")
         df.to_excel(failed_gstins_path, index=False)
         print(f"Created the failed gstins file - {failed_gstins_path}\n")
@@ -235,8 +235,6 @@ class TaxFilingStatusTask(BaseTask):
             "gstr1": tax_filing_data["gstr1"],
             "gstr3b": tax_filing_data["gstr3b"],
         }
-
-
 
 
 class Test:

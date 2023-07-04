@@ -4,9 +4,9 @@ import requests
 
 
 class Env(enum.Enum):
-    PROD = 'prod'
-    QA = 'qa'
-    DEV = 'dev'
+    PROD = "prod"
+    QA = "qa"
+    DEV = "dev"
 
 
 class SimpleRequests:
@@ -48,7 +48,7 @@ class SimpleRequests:
         Args:
             token: Authorization token.
         """
-        self.headers['Authorization'] = token
+        self.headers["Authorization"] = token
 
     def get_url(self, endpoint: str) -> str:
         """
@@ -129,7 +129,7 @@ class ApiService:
     BASE_URLS = {
         Env.PROD.value: "https://app.kyss.ai/apis/",
         Env.QA.value: "https://qa.appv2.kyss.ai/apis/",
-        Env.DEV.value: "http://127.0.0.1:8000/apis/"
+        Env.DEV.value: "http://127.0.0.1:8000/apis/",
     }
 
     PROD_BASE_URL = "https://app.kyss.ai/apis/"
