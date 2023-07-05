@@ -53,7 +53,7 @@ def validate_gstin(gstin: str) -> Optional[str]:
     if not isinstance(gstin, str):
         raise ValidationError(f"`{gstin}` should be a string!")
     gstin = gstin.strip()
-    pattern = r"^[0-9]{2}[A-Za-z]{5}\d{4}[A-Za-z]{1}[0-9A-Za-z]{1}[Zz]{1}[0-9A-Za-z]{1}$"
+    pattern = r"^(?i)\d{2}[a-z]{5}\d{4}[a-z]\w[zd]\w$"
 
     if not re.match(pattern, gstin):
         raise ValidationError(f"`{gstin}` is an invalid GSTIN!")
