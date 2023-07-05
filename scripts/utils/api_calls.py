@@ -74,7 +74,7 @@ class SimpleRequests:
             JSON response as a dictionary.
         """
         response = requests.get(self.get_url(endpoint), headers=self.headers, **kwargs)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response
 
     def post(self, endpoint: str, data=None, **kwargs) -> dict:
@@ -90,7 +90,7 @@ class SimpleRequests:
             JSON response as a dictionary.
         """
         response = requests.post(self.get_url(endpoint), data=data, headers=self.headers, **kwargs)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response
 
     def patch(self, endpoint: str, data=None, **kwargs) -> dict:
@@ -106,7 +106,7 @@ class SimpleRequests:
             JSON response as a dictionary.
         """
         response = requests.patch(self.get_url(endpoint), data=data, headers=self.headers, **kwargs)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response
 
     def delete(self, endpoint: str, **kwargs) -> int:
@@ -121,7 +121,7 @@ class SimpleRequests:
             HTTP status code.
         """
         response = requests.delete(self.get_url(endpoint), headers=self.headers, **kwargs)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response.status_code
 
 
