@@ -147,6 +147,7 @@ class PreRegisterFileProcessingTask(BaseTask):
 
     def upload_file(self) -> str:
         """Upload the file."""
+        file_id = None
         spinner = Halo(text="Uploading File", spinner="dots")
         spinner.start()
         try:
@@ -156,20 +157,17 @@ class PreRegisterFileProcessingTask(BaseTask):
                     files={"files": f},
                     stream=True,
                 )
-            file_id = None
             try:
-                file_id = int(response.json().get("data", {})["file_id"])
+                # file_id = int(response.json().get("data", {}).split(' - ')[1])
+                file_id = int(response.json().get("data", {})['file_id'])
             except (ValueError, KeyError) as e:
-                print("Failed to upload the file.")
-                return
+                spinner.fail("Failed to upload the file.")
             if file_id:
                 spinner.succeed("File uploaded successfully.")
-                return file_id
         except requests.exceptions.RequestException as e:
             spinner.fail(f"Failed to upload the file. Error: {e}")
             print(str(e))
-
-        return None
+        return file_id
 
     def process_file(self, file_id: str) -> str:
         """Process the file."""
