@@ -159,7 +159,7 @@ class PreRegisterFileProcessingTask(BaseTask):
                 )
             try:
                 # file_id = int(response.json().get("data", {}).split(' - ')[1])
-                file_id = int(response.json().get("data", {})['file_id'])
+                file_id = int(response.json().get("data", {})["file_id"])
             except (ValueError, KeyError) as e:
                 spinner.fail("Failed to upload the file.")
             if file_id:
