@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 
 import pandas as pd
@@ -43,26 +44,64 @@ class TaxPayerDetailsTask(BaseTask):
 
     def get_params(self) -> None:
         """Get parameters for the task from the user."""
-        self.input_file = input("\nEnter the path to the file containing GSTINs: ")
-        print("\n")
+        while True:
+            self.input_directory = input("\nEnter the input directory path: ")
+            if os.path.isdir(self.input_directory):
+                print("\n")
+                break
+            print(f"\nInvalid input directory path '{self.input_directory}'")
 
     def execute(self) -> None:
         """Execute the task."""
-        gstins = self.read_gstins_from_file()
-        if not gstins:
-            print("No GSTINs found in the input file.")
+        # Create directories to store processed files and output files
+        processed_dir = os.path.join(self.input_directory, "processed")
+        output_dir = os.path.join(self.input_directory, "output")
+        os.makedirs(processed_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+
+        print("=" * 50)
+        print("Starting TaxPayer Details Task...")
+        print("=" * 50)
+
+        # Get files with supported extensions
+        input_files = [
+            os.path.join(self.input_directory, file)
+            for file in os.listdir(self.input_directory)
+            if os.path.splitext(file)[1].lower() in [".csv", ".xlsx", ".xls"]
+        ]
+
+        if not input_files:
+            print("No supported files found in the input directory.")
             return
 
-        self.file_path = self.generate_output_file_path()
+        for input_file in input_files:
+            print("\n" + "-" * 50)
+            print(f"Processing File: {os.path.basename(input_file)}")
+            print("-" * 50 + "\n")
 
-        try:
-            taxpayer_details = self.get_taxpayer_details(gstins)
-            if taxpayer_details:
-                self.write_taxpayer_details_to_file(taxpayer_details)
-            else:
-                print("Failed to get taxpayer details.")
-        except Exception as e:
-            print(f"Failed to get taxpayer details. Error: {e}")
+            self.input_file = input_file
+            gstins = self.read_gstins_from_file()
+            if not gstins:
+                print(f"No GSTINs found in the input file {input_file}.")
+                continue
+
+            self.file_path = self.generate_output_file_path()
+
+            try:
+                taxpayer_details = self.get_taxpayer_details(gstins)
+                if taxpayer_details:
+                    self.write_taxpayer_details_to_file(taxpayer_details)
+                    # Move the processed file to the processed directory
+                    shutil.move(input_file, os.path.join(processed_dir, os.path.basename(input_file)))
+                    print(f"File {os.path.basename(input_file)} processed successfully.")
+                else:
+                    print("Failed to get taxpayer details.")
+            except Exception as e:
+                print(f"Failed to get taxpayer details. Error: {e}")
+
+        print("\n" + "=" * 50)
+        print("TaxPayer Details Task Completed.")
+        print("=" * 50)
 
     def read_gstins_from_file(self) -> list:
         """Read GSTINs from the input file."""
@@ -142,7 +181,7 @@ class TaxPayerDetailsTask(BaseTask):
         base_name = os.path.splitext(os.path.basename(self.input_file))[0]
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         output_file_name = f"{base_name}_output_{timestamp}.xlsx"
-        output_dir = os.path.dirname(self.input_file)
+        output_dir = os.path.join(self.input_directory, "output")
         output_file_path = os.path.join(output_dir, output_file_name)
         return output_file_path
 
