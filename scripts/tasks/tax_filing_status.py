@@ -78,10 +78,10 @@ class TaxFilingStatusTask(BaseTask):
         """
         self.prepare_output_directory()
         files = self.get_input_files()
-        try:
-            self.process_files(files)
-        except Exception:
-            self.create_failed_gstin_file()
+        # try:
+        self.process_files(files)
+        # except Exception:
+        # self.move_failed_gstins()
 
     def prepare_output_directory(self) -> None:
         """
@@ -99,13 +99,17 @@ class TaxFilingStatusTask(BaseTask):
         parent_dir = Path(sample_file).parent
         processed_dir_path = os.path.join(parent_dir, "processed")
         create_directory_if_not_exists(processed_dir_path)
+
         for input_file in files:
-            print(input_file.file_path)
+            print("=" * 50)
+            print(f"Starting processing for file: {input_file.file_path}")
             start_time = time.time()
             self.generate_output_file(input_file)
             end_time = time.time()
             time_taken = (end_time - start_time) / 60
-            print(f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes\n")
+            print(f"Time taken to process the file: {format_text(f'{time_taken:.2f}', COLOUR_ORANGE)} minutes")
+            print(f"Finished processing for file: {input_file.file_path}")
+            print("=" * 50 + "\n")
             self.move_processed_file(processed_dir_path, input_file.file_path)
         self.create_failed_gstin_file()
 
@@ -167,7 +171,7 @@ class TaxFilingStatusTask(BaseTask):
         self.failed_gstins.append(gstin)
         end_time = time.time()
         time_taken = end_time - start_time
-        spinner.fail(f"{index}) {message} for '{gstin}' : time taken {time_taken:.2f} seconds.")
+        spinner.fail(f"{index}) {message} for GSTIN '{gstin}'. Time taken: {time_taken:.2f} seconds.")
 
     def generate_output_file(self, file):
         gstins = self.get_gstins(file)
@@ -176,7 +180,7 @@ class TaxFilingStatusTask(BaseTask):
 
         for index, gstin in enumerate(gstins, start=1):
             with Halo(
-                text=format_text(f"{index}) Processing '{gstin}'", colour=COLOUR_ORANGE), spinner="dots"
+                text=format_text(f"{index}) Processing GSTIN '{gstin}'", colour=COLOUR_ORANGE), spinner="dots"
             ) as spinner:
                 start_time = time.time()
 
@@ -184,14 +188,23 @@ class TaxFilingStatusTask(BaseTask):
                     tax_payer_response = self.api_service.call_taxpayer_endpoint(gstin)
                     tax_payer_data = tax_payer_response.json()["data"]
                 except HTTPError:
-                    self.append_failed_gstin_and_log(index, gstin, start_time, spinner, "HTTP Error")
+                    self.append_failed_gstin_and_log(
+                        index, gstin, start_time, spinner, "HTTP Error while fetching taxpayer data"
+                    )
                     continue
 
                 try:
                     tax_filing_response = self.api_service.call_tax_filing_endpoint(gstin, self.return_period)
                     tax_filing_data = tax_filing_response.json()["data"]
+                except KeyError as err:
+                    self.append_failed_gstin_and_log(
+                        index, gstin, start_time, spinner, tax_filing_response.json()["message"]
+                    )
+                    continue
                 except HTTPError:
-                    self.append_failed_gstin_and_log(index, gstin, start_time, spinner, "HTTP Error")
+                    self.append_failed_gstin_and_log(
+                        index, gstin, start_time, spinner, "HTTP Error while fetching tax filing data"
+                    )
                     continue
 
                 filing_data = (
@@ -209,7 +222,15 @@ class TaxFilingStatusTask(BaseTask):
 
         df = pd.DataFrame(data)
         df.to_excel(output_file_path, index=False)
-        print(f"Created the output file - {output_file_path}")
+        print(f"\nCreated the output file - {output_file_path}\n")
+
+    def move_failed_gstins(self):
+        failed_dir_path = os.path.join(self.directory_path, "failed")
+        create_directory_if_not_exists(failed_dir_path)
+        df = pd.DataFrame(self.failed_gstins, columns=["gstin"])
+        failed_gstins_path = os.path.join(self.directory_path, "failed", "failed_gstins.xlsx")
+        df.to_excel(failed_gstins_path, index=False)
+        print(f"Created the failed gstins file - {failed_gstins_path}\n")
 
     def create_failed_gstin_file(self):
         df = pd.DataFrame(self.failed_gstins, columns=["gstin"])
@@ -235,7 +256,3 @@ class TaxFilingStatusTask(BaseTask):
             "gstr1": tax_filing_data["gstr1"],
             "gstr3b": tax_filing_data["gstr3b"],
         }
-
-
-class Test:
-    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
