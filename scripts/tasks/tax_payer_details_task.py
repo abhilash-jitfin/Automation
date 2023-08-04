@@ -12,10 +12,10 @@ class TaxPayerDetailsTask(BaseTask):
     description = "Task to get taxpayer details for GSTINs"
 
     def __init__(self, token=None):
-        self.simple_requests = SimpleRequests.get_instance(token)
         self.settings = load_settings()
-        if self.simple_requests.headers.get("Authorization") is None:
-            self.simple_requests.set_token(self.settings.get("token"))
+        environment = self.settings.get("environment", "")
+        token = self.settings.get(environment, {}).get("token")
+        self.api_service = ApiService(token=token, environment=self.settings.get("environment"))
         self.file_path = None
         self.output_fields = [
             "date_of_cancellation",
@@ -87,11 +87,10 @@ class TaxPayerDetailsTask(BaseTask):
     def get_taxpayer_details(self, gstins: list):
         """Get taxpayer details for the given GSTINs."""
         taxpayer_details = {}
-
         for i, gstin in enumerate(gstins, start=1):
             try:
                 print(f"{i}) {gstin}\n")
-                response = self.simple_requests.get(f"{ApiService.TAX_PAYER_ENDPOINT}{gstin}")
+                response = self.api_service.call_taxpayer_endpoint(gstin)
                 if response.json().get("success"):
                     data = response.json().get("data", {})
                     if data:
