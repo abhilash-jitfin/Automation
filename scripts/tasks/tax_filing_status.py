@@ -192,6 +192,9 @@ class TaxFilingStatusTask(BaseTask):
                         index, gstin, start_time, spinner, "HTTP Error while fetching taxpayer data"
                     )
                     continue
+                except KeyError:
+                    self.append_failed_gstin_and_log(index, gstin, start_time, spinner, tax_payer_response.json())
+                    continue
 
                 try:
                     tax_filing_response = self.api_service.call_tax_filing_endpoint(gstin, self.return_period)
@@ -213,8 +216,14 @@ class TaxFilingStatusTask(BaseTask):
                     else {"gstr1": "-", "gstr3b": "-", "return_period": self.return_period_desc}
                 )
 
-                row_data = self.get_row_data(tax_payer_data, filing_data)
-                data.append(row_data)
+                if tax_payer_data.get('gstin'):
+                    row_data = self.get_row_data(tax_payer_data, filing_data)
+                    data.append(row_data)
+                else:
+                    self.append_failed_gstin_and_log(
+                        index, gstin, start_time, spinner, "Error while fetching tax payer data"
+                    )
+                    continue
 
                 end_time = time.time()
                 time_taken = end_time - start_time
